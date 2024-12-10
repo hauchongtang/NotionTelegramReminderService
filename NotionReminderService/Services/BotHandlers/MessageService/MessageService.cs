@@ -38,8 +38,10 @@ public class MessageService(INotionEventParserService notionEventParserService, 
         }
         
         messageBody += $"""
+                        
                         <b><i>Ongoing Events: </i></b>
                         --------------------------
+                        
                         """;
 
         foreach (var notionEvent in ongoingEvents)
