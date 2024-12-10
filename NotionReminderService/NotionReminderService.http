@@ -1,0 +1,12 @@
+@NotionReminderService_HostAddress = http://localhost:8443
+
+GET {{NotionReminderService_HostAddress}}/setWebhook
+
+###
+GET {{NotionReminderService_HostAddress}}/removeWebhook
+
+###
+GET {{NotionReminderService_HostAddress}}/gatherEvents
+
+###
+GET {{NotionReminderService_HostAddress}}/sendEventsToChannel?isMorning=true
