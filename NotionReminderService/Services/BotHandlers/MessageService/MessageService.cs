@@ -1,14 +1,16 @@
 using Microsoft.Extensions.Options;
 using NotionReminderService.Config;
 using NotionReminderService.Services.NotionHandlers;
+using NotionReminderService.Utils;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace NotionReminderService.Services.BotHandlers.MessageService;
 
-public class MessageService(INotionEventParserService notionEventParserService, ITelegramBotClient telegramBotClient, 
-    IOptions<BotConfiguration> botConfig, IOptions<NotionConfiguration> notionConfig, ILogger<IMessageService> logger)
+public class MessageService(INotionEventParserService notionEventParserService, ITelegramBotClient telegramBotClient,
+    IDateTimeProvider dateTimeProvider, IOptions<BotConfiguration> botConfig, IOptions<NotionConfiguration> notionConfig, 
+    ILogger<IMessageService> logger)
     : IMessageService
 {
     public async Task<Message> SendMessageToChannel(bool isMorning)
@@ -65,7 +67,7 @@ public class MessageService(INotionEventParserService notionEventParserService, 
         }
 
         messageBody += $"""
-                        Updated as of: {DateTime.Now:F}
+                        Updated as of: {dateTimeProvider.Now:F}
                         """;
 
         var message = await telegramBotClient.SendMessage(new ChatId(botConfig.Value.ChatId), messageBody, ParseMode.Html);

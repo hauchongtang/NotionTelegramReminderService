@@ -2,6 +2,8 @@ using NotionReminderService.Config;
 using NotionReminderService.Services.BotHandlers.MessageService;
 using NotionReminderService.Services.BotHandlers.UpdateService;
 using NotionReminderService.Services.NotionHandlers;
+using NotionReminderService.Services.NotionHandlers.NotionService;
+using NotionReminderService.Utils;
 using Serilog;
 using Telegram.Bot;
 
@@ -20,6 +22,8 @@ builder.Services.AddHttpClient("webhook").AddTypedClient<ITelegramBotClient>(
 builder.Services.AddSingleton<IUpdateService, UpdateService>();
 builder.Services.AddScoped<INotionEventParserService, NotionEventParserService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<INotionService, NotionService>();
+builder.Services.AddScoped<IDateTimeProvider, SystemDateTimeProvider>();
 
 builder.Services.AddAuthentication();
 builder.Services.AddHealthChecks();

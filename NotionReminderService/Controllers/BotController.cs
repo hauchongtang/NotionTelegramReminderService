@@ -5,6 +5,7 @@ using NotionReminderService.Config;
 using NotionReminderService.Services.BotHandlers.MessageService;
 using NotionReminderService.Services.BotHandlers.UpdateService;
 using NotionReminderService.Services.NotionHandlers;
+using NotionReminderService.Utils;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -18,6 +19,7 @@ public class BotController(
     IUpdateService updateService,
     INotionEventParserService notionEventParserService,
     IMessageService messageService,
+    IDateTimeProvider dateTimeProvider,
     ILogger<BotController> logger, 
     IOptions<BotConfiguration> botConfig)
     : ControllerBase
@@ -67,6 +69,6 @@ public class BotController(
     public async Task<IActionResult> SendEventsToChannel([FromQuery] bool isMorning, CancellationToken cancellationToken)
     {
         var message = await messageService.SendMessageToChannel(isMorning);
-        return Ok($"Message sent at {DateTime.Now}");
+        return Ok($"Message sent at {dateTimeProvider.Now}");
     }
 }

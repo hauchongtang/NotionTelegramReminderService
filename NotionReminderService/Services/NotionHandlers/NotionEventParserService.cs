@@ -1,11 +1,11 @@
-using Microsoft.Extensions.Options;
 using Notion.Client;
-using NotionReminderService.Config;
 using NotionReminderService.Models.NotionEvent;
+using NotionReminderService.Services.NotionHandlers.NotionService;
+using NotionReminderService.Utils;
 
 namespace NotionReminderService.Services.NotionHandlers;
 
-public class NotionEventParserService(INotionClient notionClient, IOptions<NotionConfiguration> options, 
+public class NotionEventParserService(INotionService notionService, IDateTimeProvider dateTimeProvider, 
     ILogger<INotionEventParserService> logger)
     : INotionEventParserService
 {
@@ -15,14 +15,14 @@ public class NotionEventParserService(INotionClient notionClient, IOptions<Notio
         DateTime to;
         if (isMorning)
         {
-            var currentDt = DateTime.Now;
+            var currentDt = dateTimeProvider.Now;
             from = new DateTime(currentDt.Year, currentDt.Month, currentDt.Day);
             to = currentDt.AddDays(3);
         }
         else
         {
-            from = DateTime.Now;
-            to = DateTime.Now.AddDays(3);
+            from = dateTimeProvider.Now;
+            to = dateTimeProvider.Now.AddDays(3);
         }
         var pages = await GetPages(from, to);
         var events = new List<NotionEvent>();
@@ -33,7 +33,8 @@ public class NotionEventParserService(INotionClient notionClient, IOptions<Notio
             var persons = GetNotionEventPerson(page);
             var status = GetNotionEventStatus(page);
             var tags = GetNotionEventTag(page);
-            var notionEvent = GenerateNotionEvent(page, notionEventName, location, persons, status, tags);
+            var date = GetNotionEventDate(page);
+            var notionEvent = GenerateNotionEvent(page, date, notionEventName, location, persons, status, tags);
             if (notionEvent is null) continue;
             events.Add(notionEvent);
         }
@@ -43,8 +44,8 @@ public class NotionEventParserService(INotionClient notionClient, IOptions<Notio
 
     public async Task<List<NotionEvent>> GetOngoingEvents()
     {
-        var from = DateTime.Now.AddMonths(-2);
-        var to = DateTime.Now.AddMonths(2);
+        var from = dateTimeProvider.Now.AddMonths(-2);
+        var to = dateTimeProvider.Now.AddMonths(2);
         var pages = await GetPages(from, to);
         var events = new List<NotionEvent>();
         foreach (var page in pages.Results)
@@ -54,60 +55,47 @@ public class NotionEventParserService(INotionClient notionClient, IOptions<Notio
             var persons = GetNotionEventPerson(page);
             var status = GetNotionEventStatus(page);
             var tags = GetNotionEventTag(page);
-            var notionEvent = GenerateNotionEvent(page, notionEventName, location, persons, status, tags);
+            var date = GetNotionEventDate(page);
+            var notionEvent = GenerateNotionEvent(page, date, notionEventName, location, persons, status, tags);
             if (notionEvent is null) continue;
             events.Add(notionEvent);
         }
 
         var ongoingEvents = events.Where(e => e is { Start: not null, End: not null } 
-                                              && DateTime.Now >= e.Start.Value && DateTime.Now <= e.End.Value);
+                                              && dateTimeProvider.Now >= e.Start.Value && dateTimeProvider.Now <= e.End.Value);
         return ongoingEvents.ToList();
     }
 
-    private static NotionEvent? GenerateNotionEvent(Page page, string? notionEventName, string? location, string? persons, 
+    private static NotionEvent? GenerateNotionEvent(Page page, Date? date, string? notionEventName, string? location, string? persons, 
         string? status, string? tags)
     {
-        NotionEvent? notionEvent = null;
+        if (date is null) return null;
+        
+        var notionEvent = new NotionEvent
+        {
+            Name = notionEventName,
+            Where = location,
+            Person = persons,
+            Status = status,
+            Tags = tags,
+            Start = date.Start!.Value,
+            End = date.End!.Value,
+            Date = date.Start.Value,
+            Url = page.Url
+        };
+
+        return notionEvent;
+    }
+
+    private static Date? GetNotionEventDate(Page page)
+    {
         if (!page.Properties.ContainsKey("Date")) return null;
         
         page.Properties.TryGetValue("Date", out var dateProperty);
         
         if (dateProperty is not { Type: PropertyValueType.Date }) return null;
         
-        var date = ((DatePropertyValue) dateProperty).Date;
-        if (date.Start.HasValue && date.End.HasValue)
-        {
-            notionEvent = new NotionEvent
-            {
-                Name = notionEventName,
-                Where = location,
-                Person = persons,
-                Status = status,
-                Tags = tags,
-                Start = date.Start.Value,
-                End = date.End.Value,
-                Date = date.Start.Value,
-                Url = page.Url
-            };
-        }
-
-        else
-            notionEvent = date switch
-            {
-                { Start: not null, End: null } => new NotionEvent
-                {
-                    Name = notionEventName, Where = location, Start = date.Start.Value, Date = date.Start.Value, 
-                    Person = persons, Status = status, Tags = tags, Url = page.Url
-                },
-                { Start: null, End: null } => new NotionEvent
-                {
-                    Name = notionEventName, Where = location, Date = date.Start.Value, Person = persons,
-                    Status = status, Tags = tags, Url = page.Url
-                },
-                _ => notionEvent
-            };
-
-        return notionEvent;
+        return ((DatePropertyValue) dateProperty).Date;
     }
 
     private static string? GetNotionEventLocation(Page page)
@@ -175,7 +163,7 @@ public class NotionEventParserService(INotionClient notionClient, IOptions<Notio
                 }
             ]
         };
-        var paginatedList = await notionClient.Databases.QueryAsync(options.Value.DatabaseId, databaseQuery);
+        var paginatedList = await notionService.GetPaginatedList(databaseQuery);
         return paginatedList;
     }
 
