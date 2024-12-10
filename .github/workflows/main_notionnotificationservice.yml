@@ -47,13 +47,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-      
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_81221654994F44598139A8A6A87353ED }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_ECEA428336C6456780E637B32291CCAE }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_1B21DFD8A5304D59BFA9010BF27B09E3 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
@@ -62,4 +55,4 @@ jobs:
           app-name: 'NotionNotificationService'
           slot-name: 'Production'
           package: .
-          
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_A3C7D57CCCC94557BEEF677536ED65FB }}
