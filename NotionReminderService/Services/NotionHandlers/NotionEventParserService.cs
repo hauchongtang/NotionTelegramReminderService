@@ -30,7 +30,10 @@ public class NotionEventParserService(INotionClient notionClient, IOptions<Notio
         {
             var notionEventName = GetNotionEventName(page);
             var location = GetNotionEventLocation(page);
-            var notionEvent = GenerateNotionEvent(page, notionEventName, location);
+            var persons = GetNotionEventPerson(page);
+            var status = GetNotionEventStatus(page);
+            var tags = GetNotionEventTag(page);
+            var notionEvent = GenerateNotionEvent(page, notionEventName, location, persons, status, tags);
             if (notionEvent is null) continue;
             events.Add(notionEvent);
         }
@@ -48,7 +51,10 @@ public class NotionEventParserService(INotionClient notionClient, IOptions<Notio
         {
             var notionEventName = GetNotionEventName(page);
             var location = GetNotionEventLocation(page);
-            var notionEvent = GenerateNotionEvent(page, notionEventName, location);
+            var persons = GetNotionEventPerson(page);
+            var status = GetNotionEventStatus(page);
+            var tags = GetNotionEventTag(page);
+            var notionEvent = GenerateNotionEvent(page, notionEventName, location, persons, status, tags);
             if (notionEvent is null) continue;
             events.Add(notionEvent);
         }
@@ -58,7 +64,8 @@ public class NotionEventParserService(INotionClient notionClient, IOptions<Notio
         return ongoingEvents.ToList();
     }
 
-    private static NotionEvent? GenerateNotionEvent(Page page, string? notionEventName, string? location)
+    private static NotionEvent? GenerateNotionEvent(Page page, string? notionEventName, string? location, string? persons, 
+        string? status, string? tags)
     {
         NotionEvent? notionEvent = null;
         if (!page.Properties.ContainsKey("Date")) return null;
@@ -74,9 +81,13 @@ public class NotionEventParserService(INotionClient notionClient, IOptions<Notio
             {
                 Name = notionEventName,
                 Where = location,
+                Person = persons,
+                Status = status,
+                Tags = tags,
                 Start = date.Start.Value,
                 End = date.End.Value,
-                Date = date.Start.Value
+                Date = date.Start.Value,
+                Url = page.Url
             };
         }
 
@@ -85,11 +96,13 @@ public class NotionEventParserService(INotionClient notionClient, IOptions<Notio
             {
                 { Start: not null, End: null } => new NotionEvent
                 {
-                    Name = notionEventName, Where = location, Start = date.Start.Value, Date = date.Start.Value
+                    Name = notionEventName, Where = location, Start = date.Start.Value, Date = date.Start.Value, 
+                    Person = persons, Status = status, Tags = tags, Url = page.Url
                 },
                 { Start: null, End: null } => new NotionEvent
                 {
-                    Name = notionEventName, Where = location, Date = date.Start.Value
+                    Name = notionEventName, Where = location, Date = date.Start.Value, Person = persons,
+                    Status = status, Tags = tags, Url = page.Url
                 },
                 _ => notionEvent
             };
@@ -100,12 +113,10 @@ public class NotionEventParserService(INotionClient notionClient, IOptions<Notio
     private static string? GetNotionEventLocation(Page page)
     {
         string? location = null;
-        if (page.Properties.ContainsKey("Where"))
-        {
-            page.Properties.TryGetValue("Where", out var where);
-            var locRichText = ((RichTextPropertyValue) where!).RichText;
-            location = locRichText.Aggregate("", (s, rt) => s + rt.PlainText);
-        }
+        if (!page.Properties.ContainsKey("Where")) return location;
+        page.Properties.TryGetValue("Where", out var where);
+        var locRichText = ((RichTextPropertyValue) where!).RichText;
+        location = locRichText.Aggregate("", (s, rt) => s + rt.PlainText);
 
         return location;
     }
@@ -113,14 +124,39 @@ public class NotionEventParserService(INotionClient notionClient, IOptions<Notio
     private static string? GetNotionEventName(Page page)
     {
         string? notionEventName = null;
-        if (page.Properties.ContainsKey("Name"))
-        {
-            page.Properties.TryGetValue("Name", out var title);
-            var titleRichText = ((TitlePropertyValue) title!).Title;
-            notionEventName = titleRichText.Aggregate("", (s, rt) => s + rt.PlainText);
-        }
+        if (!page.Properties.ContainsKey("Name")) return notionEventName;
+        page.Properties.TryGetValue("Name", out var title);
+        var titleRichText = ((TitlePropertyValue) title!).Title;
+        notionEventName = titleRichText.Aggregate("", (s, rt) => s + rt.PlainText);
 
         return notionEventName;
+    }
+    
+    private static string? GetNotionEventPerson(Page page)
+    {
+        if (!page.Properties.ContainsKey("Person")) return null;
+        
+        page.Properties.TryGetValue("Person", out var personPropValue);
+        var personList = ((PeoplePropertyValue) personPropValue!).People.Select(x => x.Name).ToList();
+        return string.Join(" ,", personList);
+    }
+
+    private static string? GetNotionEventStatus(Page page)
+    {
+        if (!page.Properties.ContainsKey("Status")) return null;
+
+        page.Properties.TryGetValue("Status", out var statusPropValue);
+        var status = ((StatusPropertyValue)statusPropValue!).Status;
+        return status.Name;
+    }
+
+    private static string? GetNotionEventTag(Page page)
+    {
+        if (!page.Properties.ContainsKey("Tags")) return null;
+
+        page.Properties.TryGetValue("Tags", out var multiSelectPropValue);
+        var tags = ((MultiSelectPropertyValue)multiSelectPropValue!).MultiSelect.Select(x => x.Name);
+        return string.Join(" | ", tags);
     }
 
     public async Task<PaginatedList<Page>> GetPages(DateTime from, DateTime to)

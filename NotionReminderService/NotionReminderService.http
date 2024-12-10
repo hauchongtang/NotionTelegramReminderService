@@ -10,3 +10,6 @@ GET {{NotionReminderService_HostAddress}}/gatherEvents
 
 ###
 GET {{NotionReminderService_HostAddress}}/sendEventsToChannel?isMorning=true
+
+###
+GET {{NotionReminderService_HostAddress}}/health

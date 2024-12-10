@@ -22,6 +22,7 @@ builder.Services.AddScoped<INotionEventParserService, NotionEventParserService>(
 builder.Services.AddScoped<IMessageService, MessageService>();
 
 builder.Services.AddAuthentication();
+builder.Services.AddHealthChecks();
 builder.Services.AddControllers();
 builder.Services.ConfigureTelegramBotMvc();
 
@@ -42,5 +43,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseHealthChecks("/health");
 
 app.Run();
