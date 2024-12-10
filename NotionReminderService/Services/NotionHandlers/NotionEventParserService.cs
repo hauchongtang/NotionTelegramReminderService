@@ -79,8 +79,8 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
             Status = status,
             Tags = tags,
             Start = date.Start!.Value,
-            End = date.End!.Value,
-            Date = date.Start.Value,
+            End = date.End.HasValue ? date.End!.Value : null,
+            Date = date.Start!.Value,
             Url = page.Url
         };
 
