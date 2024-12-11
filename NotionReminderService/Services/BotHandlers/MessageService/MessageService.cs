@@ -5,6 +5,7 @@ using NotionReminderService.Utils;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace NotionReminderService.Services.BotHandlers.MessageService;
 
@@ -19,8 +20,6 @@ public class MessageService(INotionEventParserService notionEventParserService, 
         var ongoingEvents = await notionEventParserService.GetOngoingEvents();
         var greetings = isMorning ? "Morning" : "Evening";
         var messageBody = $"""
-                           <a href="https://www.notion.so/{notionConfig.Value.DatabaseId}">View Plans on Notion</a> 
-                           
                            <b><i>Good {greetings} All, there are {events.Count} events upcoming in the next 3 days.</i></b>
                            --------------------------
                            
@@ -70,7 +69,13 @@ public class MessageService(INotionEventParserService notionEventParserService, 
                         Updated as of: {dateTimeProvider.Now:F}
                         """;
 
-        var message = await telegramBotClient.SendMessage(new ChatId(botConfig.Value.ChatId), messageBody, ParseMode.Html);
+        var replyMarkup = new InlineKeyboardMarkup()
+            .AddNewRow()
+            .AddButton(InlineKeyboardButton.WithUrl("View on Notion",
+                $"https://www.notion.so/{notionConfig.Value.DatabaseId}"));
+
+        var message = await telegramBotClient.SendMessage(new ChatId(botConfig.Value.ChatId), messageBody,
+            ParseMode.Html, replyMarkup: replyMarkup);
         return message;
     }
 }
