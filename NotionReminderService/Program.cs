@@ -1,6 +1,6 @@
 using NotionReminderService.Config;
-using NotionReminderService.Services.BotHandlers.MessageService;
-using NotionReminderService.Services.BotHandlers.UpdateService;
+using NotionReminderService.Services.BotHandlers.MessageHandler;
+using NotionReminderService.Services.BotHandlers.UpdateHandler;
 using NotionReminderService.Services.NotionHandlers;
 using NotionReminderService.Services.NotionHandlers.NotionService;
 using NotionReminderService.Utils;

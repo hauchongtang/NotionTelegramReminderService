@@ -7,7 +7,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace NotionReminderService.Services.BotHandlers.MessageService;
+namespace NotionReminderService.Services.BotHandlers.MessageHandler;
 
 public class MessageService(INotionEventParserService notionEventParserService, ITelegramBotClient telegramBotClient,
     IDateTimeProvider dateTimeProvider, IOptions<BotConfiguration> botConfig, IOptions<NotionConfiguration> notionConfig, 

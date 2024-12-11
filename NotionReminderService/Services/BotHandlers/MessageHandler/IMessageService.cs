@@ -1,6 +1,6 @@
 using Telegram.Bot.Types;
 
-namespace NotionReminderService.Services.BotHandlers.MessageService;
+namespace NotionReminderService.Services.BotHandlers.MessageHandler;
 
 public interface IMessageService
 {

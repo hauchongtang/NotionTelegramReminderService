@@ -6,7 +6,7 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace NotionReminderService.Services.BotHandlers.UpdateService;
+namespace NotionReminderService.Services.BotHandlers.UpdateHandler;
 
 public class UpdateService(ITelegramBotClient telegramBotClient, ILogger<IUpdateService> logger)
     : IUpdateService
@@ -21,7 +21,7 @@ public class UpdateService(ITelegramBotClient telegramBotClient, ILogger<IUpdate
             await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
     }
 
-    public async Task HandleUpdateAsync(Update update, CancellationToken cancellationToken)
+    public async Task HandleUpdateAsync(Telegram.Bot.Types.Update update, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         await (update switch
@@ -185,7 +185,7 @@ public class UpdateService(ITelegramBotClient telegramBotClient, ILogger<IUpdate
             await telegramBotClient.SendMessage(pollAnswer.User.Id, $"You've chosen: {selectedOption.Text} in poll");
     }
 
-    private Task UnknownUpdateHandlerAsync(Update update)
+    private Task UnknownUpdateHandlerAsync(Telegram.Bot.Types.Update update)
     {
         logger.LogInformation("Unknown update type: {UpdateType}", update.Type);
         return Task.CompletedTask;

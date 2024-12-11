@@ -23,8 +23,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Services\BotHandlers\MessageService\" />
-    <Folder Include="Services\BotHandlers\UpdateService\" />
+    <Folder Include="Services\BotHandlers\MessageHandler\" />
+    <Folder Include="Services\BotHandlers\UpdateHandler\" />
   </ItemGroup>
 
   <ItemGroup>
