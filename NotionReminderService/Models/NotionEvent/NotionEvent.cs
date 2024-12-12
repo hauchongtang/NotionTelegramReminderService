@@ -10,5 +10,8 @@ public class NotionEvent
     public DateTime? Date { get; set; }
     public DateTime? Start { get; set; }
     public DateTime? End { get; set; }
+
+    public bool IsWholeDayEvent => Start is { Hour: 0, Minute: 0, Second: 0 };
+
     public required string? Url { get; set; }
 }
