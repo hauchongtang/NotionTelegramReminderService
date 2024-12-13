@@ -10,7 +10,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace NotionReminderService.Services.BotHandlers.MessageHandler;
 
-public class EventsEventsMessageService(INotionEventParserService notionEventParserService, ITelegramBotClient telegramBotClient,
+public class EventsMessageService(INotionEventParserService notionEventParserService, ITelegramBotClient telegramBotClient,
     IDateTimeProvider dateTimeProvider, IOptions<BotConfiguration> botConfig, IOptions<NotionConfiguration> notionConfig, 
     ILogger<IEventsMessageService> logger)
     : IEventsMessageService

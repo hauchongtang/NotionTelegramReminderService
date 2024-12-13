@@ -36,7 +36,7 @@ builder.Services.AddScoped<IGoogleAiApi, GoogleAiApi>();
 // Services
 builder.Services.AddSingleton<IUpdateService, UpdateService>();
 builder.Services.AddScoped<INotionEventParserService, NotionEventParserService>();
-builder.Services.AddScoped<IEventsMessageService, EventsEventsMessageService>();
+builder.Services.AddScoped<IEventsMessageService, EventsMessageService>();
 builder.Services.AddScoped<INotionService, NotionService>();
 builder.Services.AddScoped<IWeatherMessageService, WeatherMessageService>();
 builder.Services.AddScoped<IDateTimeProvider, SystemDateTimeProvider>();
