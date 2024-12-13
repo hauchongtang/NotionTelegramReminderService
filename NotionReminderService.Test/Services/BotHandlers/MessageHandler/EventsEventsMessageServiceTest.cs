@@ -13,14 +13,14 @@ using Telegram.Bot.Types;
 
 namespace NotionReminderService.Test.Services.BotHandlers.MessageHandler;
 
-public class MessageServiceTest {
+public class EventsEventsMessageServiceTest {
     private Mock<INotionEventParserService> _notionEventParserService;
     private Mock<ITelegramBotClient> _telegramBotClient;
     private Mock<IDateTimeProvider> _dateTimeProvider;
     private Mock<IOptions<BotConfiguration>> _botConfig;
     private Mock<IOptions<NotionConfiguration>> _notionConfig;
-    private Mock<ILogger<MessageService>> _logger;
-    private MessageService _messageService;
+    private Mock<ILogger<EventsEventsMessageService>> _logger;
+    private EventsEventsMessageService _eventsEventsMessageService;
 
     [SetUp]
     public void Setup()
@@ -44,15 +44,15 @@ public class MessageServiceTest {
             DatabaseId = "123"
         };
         _notionConfig.Setup(x => x.Value).Returns(notionConfig);
-        _logger = new Mock<ILogger<MessageService>>();
-        _messageService = new MessageService(_notionEventParserService.Object, _telegramBotClient.Object,
+        _logger = new Mock<ILogger<EventsEventsMessageService>>();
+        _eventsEventsMessageService = new EventsEventsMessageService(_notionEventParserService.Object, _telegramBotClient.Object,
             _dateTimeProvider.Object, _botConfig.Object, _notionConfig.Object, _logger.Object);
     }
 
     [Test]
     [TestCase(true, "Morning")]
     [TestCase(false, "Evening")]
-    public async Task SendMessageToChannel_MessageTime_MessageTimeGreetingsInMessageBody(bool isMorning, string expectedToContain)
+    public async Task SendEventsMessageToChannel_MessageTime_MessageTimeGreetingsInMessageBody(bool isMorning, string expectedToContain)
     {
         _dateTimeProvider.Setup(x => x.Now)
             .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).Build());
@@ -63,7 +63,7 @@ public class MessageServiceTest {
             .Setup(x => x.SendRequest(It.IsAny<IRequest<Message>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Message());
 
-        await _messageService.SendMessageToChannel(isMorning: isMorning);
+        await _eventsEventsMessageService.SendEventsMessageToChannel(isMorning: isMorning);
         
         _telegramBotClient.Verify(x =>
             x.SendRequest(It.Is<IRequest<Message>>(y => ((SendMessageRequest)y).Text.Contains(expectedToContain)),

@@ -1,6 +1,9 @@
+using NotionReminderService.Api.GoogleAi;
+using NotionReminderService.Api.Weather;
 using NotionReminderService.Config;
 using NotionReminderService.Services.BotHandlers.MessageHandler;
 using NotionReminderService.Services.BotHandlers.UpdateHandler;
+using NotionReminderService.Services.BotHandlers.WeatherHandler;
 using NotionReminderService.Services.NotionHandlers;
 using NotionReminderService.Services.NotionHandlers.NotionService;
 using NotionReminderService.Utils;
@@ -14,15 +17,28 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Services(services)
     .Enrich.FromLogContext());
 
-// Setup bot configuration
+// Setup configuration
 var botConfigSection = builder.Configuration.GetSection("BotConfiguration");
 builder.Services.Configure<BotConfiguration>(botConfigSection);
 builder.Services.AddHttpClient("webhook").AddTypedClient<ITelegramBotClient>(
     httpClient => new TelegramBotClient(botConfigSection.Get<BotConfiguration>()!.BotToken, httpClient));
+
+var weatherConfigSection = builder.Configuration.GetSection("WeatherConfiguration");
+builder.Services.Configure<WeatherConfiguration>(weatherConfigSection);
+
+var googleAiConfigSection = builder.Configuration.GetSection("GoogleAiConfiguration");
+builder.Services.Configure<GoogleAiConfiguration>(googleAiConfigSection);
+
+// APIs
+builder.Services.AddScoped<IWeatherApi, WeatherApi>();
+builder.Services.AddScoped<IGoogleAiApi, GoogleAiApi>();
+
+// Services
 builder.Services.AddSingleton<IUpdateService, UpdateService>();
 builder.Services.AddScoped<INotionEventParserService, NotionEventParserService>();
-builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<IEventsMessageService, EventsEventsMessageService>();
 builder.Services.AddScoped<INotionService, NotionService>();
+builder.Services.AddScoped<IWeatherMessageService, WeatherMessageService>();
 builder.Services.AddScoped<IDateTimeProvider, SystemDateTimeProvider>();
 
 builder.Services.AddAuthentication();
