@@ -13,14 +13,14 @@ using Telegram.Bot.Types;
 
 namespace NotionReminderService.Test.Services.BotHandlers.MessageHandler;
 
-public class EventsEventsMessageServiceTest {
+public class EventsMessageServiceTest {
     private Mock<INotionEventParserService> _notionEventParserService;
     private Mock<ITelegramBotClient> _telegramBotClient;
     private Mock<IDateTimeProvider> _dateTimeProvider;
     private Mock<IOptions<BotConfiguration>> _botConfig;
     private Mock<IOptions<NotionConfiguration>> _notionConfig;
-    private Mock<ILogger<EventsEventsMessageService>> _logger;
-    private EventsEventsMessageService _eventsEventsMessageService;
+    private Mock<ILogger<EventsMessageService>> _logger;
+    private EventsMessageService _eventsMessageService;
 
     [SetUp]
     public void Setup()
@@ -44,8 +44,8 @@ public class EventsEventsMessageServiceTest {
             DatabaseId = "123"
         };
         _notionConfig.Setup(x => x.Value).Returns(notionConfig);
-        _logger = new Mock<ILogger<EventsEventsMessageService>>();
-        _eventsEventsMessageService = new EventsEventsMessageService(_notionEventParserService.Object, _telegramBotClient.Object,
+        _logger = new Mock<ILogger<EventsMessageService>>();
+        _eventsMessageService = new EventsMessageService(_notionEventParserService.Object, _telegramBotClient.Object,
             _dateTimeProvider.Object, _botConfig.Object, _notionConfig.Object, _logger.Object);
     }
 
@@ -63,7 +63,7 @@ public class EventsEventsMessageServiceTest {
             .Setup(x => x.SendRequest(It.IsAny<IRequest<Message>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Message());
 
-        await _eventsEventsMessageService.SendEventsMessageToChannel(isMorning: isMorning);
+        await _eventsMessageService.SendEventsMessageToChannel(isMorning: isMorning);
         
         _telegramBotClient.Verify(x =>
             x.SendRequest(It.Is<IRequest<Message>>(y => ((SendMessageRequest)y).Text.Contains(expectedToContain)),

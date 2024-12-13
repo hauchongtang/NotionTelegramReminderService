@@ -15,9 +15,10 @@ public class WeatherMessageService(
     IOptions<BotConfiguration> botConfig,
     ILogger<IWeatherMessageService> logger) : IWeatherMessageService
 {
-    public async Task SendMessage(string? location)
+    public async Task SendMessage(Chat? chat)
     {
         var weatherData = await weatherApi.GetRealTimeWeather();
+
         var forecasts = weatherData?[0].Forecasts;
         if (forecasts is null) return;
         
@@ -41,6 +42,6 @@ public class WeatherMessageService(
                           <i>Powered by Gemini LLM agent using real time data from <a href="https://data.gov.sg">data.gov.sg</a></i>
                           Forcast for → {weatherData?[0].ValidPeriod.Text}
                           """;
-        await botClient.SendMessage(new ChatId(botConfig.Value.ChatId), textToSend, ParseMode.Html);
+        await botClient.SendMessage(chat ?? new ChatId(botConfig.Value.ChatId), textToSend, ParseMode.Html);
     }
 }

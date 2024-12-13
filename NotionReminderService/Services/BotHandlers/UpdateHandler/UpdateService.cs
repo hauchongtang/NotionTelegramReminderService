@@ -1,3 +1,4 @@
+using NotionReminderService.Services.BotHandlers.WeatherHandler;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -8,7 +9,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace NotionReminderService.Services.BotHandlers.UpdateHandler;
 
-public class UpdateService(ITelegramBotClient telegramBotClient, ILogger<IUpdateService> logger)
+public class UpdateService(ITelegramBotClient telegramBotClient, IWeatherMessageService weatherMessageService, ILogger<IUpdateService> logger)
     : IUpdateService
 {
     private static readonly InputPollOption[] PollOptions = ["Hello", "World!"];
@@ -146,8 +147,23 @@ public class UpdateService(ITelegramBotClient telegramBotClient, ILogger<IUpdate
     private async Task OnCallbackQuery(CallbackQuery callbackQuery)
     {
         logger.LogInformation("Received inline keyboard callback from: {CallbackQueryId}", callbackQuery.Id);
-        await telegramBotClient.AnswerCallbackQuery(callbackQuery.Id, $"Received {callbackQuery.Data}");
-        await telegramBotClient.SendMessage(callbackQuery.Message!.Chat, $"Received {callbackQuery.Data}");
+        
+        switch (callbackQuery.Data)
+        {
+            case "triggerForecast":
+            {
+                await telegramBotClient.AnswerCallbackQuery(callbackQuery.Id, $"Received request for ☁️ forecast");
+                await weatherMessageService.SendMessage(callbackQuery.Message!.Chat);
+                break;
+            }
+            default:
+            {
+                await telegramBotClient.AnswerCallbackQuery(callbackQuery.Id, $"Received request for ☁️ forecast");
+                await telegramBotClient.SendMessage(callbackQuery.Message!.Chat,
+                    $"Feature is unavailable. It might be on maintenance or is disabled.");
+                break;
+            }
+        }
     }
 
     #region Inline Mode

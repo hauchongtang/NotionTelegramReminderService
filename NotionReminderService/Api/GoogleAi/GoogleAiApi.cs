@@ -14,7 +14,7 @@ public class GoogleAiApi(HttpClient httpClient, IOptions<GoogleAiConfiguration> 
         var data = BuildGeminiRequest(prompt);
         var content = new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json");
         var response = await httpClient.PostAsync(
-            new Uri($"{googleAiConfig.Value.Url}/gemini-1.5-flash:generateContent?key={googleAiConfig.Value.ApiKey}"),
+            new Uri($"{googleAiConfig.Value.Url}/{googleAiConfig.Value.ModelVersion}:generateContent?key={googleAiConfig.Value.ApiKey}"),
             content);
         response.EnsureSuccessStatusCode();
 

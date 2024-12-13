@@ -10,7 +10,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace NotionReminderService.Services.BotHandlers.MessageHandler;
 
-public class EventsEventsMessageService(INotionEventParserService notionEventParserService, ITelegramBotClient telegramBotClient,
+public class EventsMessageService(INotionEventParserService notionEventParserService, ITelegramBotClient telegramBotClient,
     IDateTimeProvider dateTimeProvider, IOptions<BotConfiguration> botConfig, IOptions<NotionConfiguration> notionConfig, 
     ILogger<IEventsMessageService> logger)
     : IEventsMessageService
@@ -73,7 +73,9 @@ public class EventsEventsMessageService(INotionEventParserService notionEventPar
         var replyMarkup = new InlineKeyboardMarkup()
             .AddNewRow()
             .AddButton(InlineKeyboardButton.WithUrl("View on Notion",
-                $"https://www.notion.so/{notionConfig.Value.DatabaseId}"));
+                $"https://www.notion.so/{notionConfig.Value.DatabaseId}"))
+            .AddNewRow()
+            .AddButton(InlineKeyboardButton.WithCallbackData("Retrieve current ☁️ forecast", "triggerForecast"));
 
         var message = await telegramBotClient.SendMessage(new ChatId(botConfig.Value.ChatId), messageBody,
             ParseMode.Html, replyMarkup: replyMarkup);
