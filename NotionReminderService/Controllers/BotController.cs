@@ -45,7 +45,7 @@ public class BotController(
         return $"Webhook {webhookUrl} removed";
     }
     
-    [HttpPost]
+    [HttpPost("getUpdates")]
     public async Task<IActionResult> Post([FromBody] Update update, CancellationToken ct)
     {
         if (Request.Headers["X-Telegram-Bot-Api-Token"] != botConfig.Value.SecretToken)
@@ -78,7 +78,7 @@ public class BotController(
     [HttpGet("sendWeatherSummaryToChannel")]
     public async Task<IActionResult> SendWeatherSummaryToChannel(CancellationToken cancellationToken)
     {
-        await weatherMessageService.SendMessage("jurong");
+        await weatherMessageService.SendMessage(null);
         return Ok();
     }
 }

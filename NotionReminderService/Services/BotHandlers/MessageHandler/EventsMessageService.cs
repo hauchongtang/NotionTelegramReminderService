@@ -73,7 +73,9 @@ public class EventsMessageService(INotionEventParserService notionEventParserSer
         var replyMarkup = new InlineKeyboardMarkup()
             .AddNewRow()
             .AddButton(InlineKeyboardButton.WithUrl("View on Notion",
-                $"https://www.notion.so/{notionConfig.Value.DatabaseId}"));
+                $"https://www.notion.so/{notionConfig.Value.DatabaseId}"))
+            .AddNewRow()
+            .AddButton(InlineKeyboardButton.WithCallbackData("Retrieve current ☁️ forecast", "triggerForecast"));
 
         var message = await telegramBotClient.SendMessage(new ChatId(botConfig.Value.ChatId), messageBody,
             ParseMode.Html, replyMarkup: replyMarkup);
