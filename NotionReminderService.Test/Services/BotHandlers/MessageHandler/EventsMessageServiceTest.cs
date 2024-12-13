@@ -34,6 +34,7 @@ public class EventsMessageServiceTest {
             BotToken = "123",
             BotWebhookUrl = new Uri("https://www.url.org"),
             SecretToken = "123token",
+            SecretTokenHeaderName = "X-Test-Header",
             ChatId = "456"
         };
         _botConfig.Setup(x => x.Value).Returns(config);
