@@ -22,6 +22,7 @@ internal class TelegramBotSetup(
             logger.LogInformation("Setting up the webhook");
             await client.SetWebhook(
                     webhookUrl,
+                    secretToken: botConfig.Value.SecretToken,
                     cancellationToken: cancellationToken
                 )
                 .ConfigureAwait(false);

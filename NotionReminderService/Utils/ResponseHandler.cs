@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace NotionReminderService.Utils;
 
-public class ResponseHandler
+public static class ResponseHandler
 {
     public static async Task<T> HandleResponse<T>(HttpResponseMessage response)
     {

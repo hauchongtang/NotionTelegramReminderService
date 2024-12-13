@@ -1,14 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using NotionReminderService.Api.GoogleAi;
-using NotionReminderService.Config;
 using NotionReminderService.Services.BotHandlers.MessageHandler;
 using NotionReminderService.Services.BotHandlers.UpdateHandler;
 using NotionReminderService.Services.BotHandlers.WeatherHandler;
 using NotionReminderService.Services.NotionHandlers;
 using NotionReminderService.Utils;
-using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace NotionReminderService.Controllers;
@@ -17,39 +13,18 @@ namespace NotionReminderService.Controllers;
 [Route("/")]
 [AllowAnonymous]
 public class BotController(
-    ITelegramBotClient telegramBotClient,
     IUpdateService updateService,
     INotionEventParserService notionEventParserService,
     IEventsMessageService eventsMessageService,
     IWeatherMessageService weatherMessageService,
     IDateTimeProvider dateTimeProvider,
-    ILogger<BotController> logger, 
-    IOptions<BotConfiguration> botConfig)
+    ILogger<BotController> logger)
     : ControllerBase
 {
-    [HttpGet("setWebhook")]
-    public async Task<string> SetWebhook(CancellationToken cancellationToken)
-    {
-        var webhookUrl = botConfig.Value.BotWebhookUrl;
-        await telegramBotClient.SetWebhook(webhookUrl.OriginalString, cancellationToken: cancellationToken);
-        
-        return $"Webhook set to {webhookUrl}";
-    }
-
-    [HttpGet("removeWebhook")]
-    public async Task<string> RemoveWebhook(CancellationToken cancellationToken)
-    {
-        var webhookUrl = botConfig.Value.BotWebhookUrl;
-        await telegramBotClient.DeleteWebhook(cancellationToken: cancellationToken);
-
-        return $"Webhook {webhookUrl} removed";
-    }
-    
     [HttpPost("getUpdates")]
+    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
     public async Task<IActionResult> Post([FromBody] Update update, CancellationToken ct)
     {
-        if (Request.Headers["X-Telegram-Bot-Api-Token"] != botConfig.Value.SecretToken)
-            Console.WriteLine(Request.Headers["X-Telegram-Bot-Api-Token"]);
         try
         {
             await updateService.HandleUpdateAsync(update, ct);
@@ -62,6 +37,7 @@ public class BotController(
     }
 
     [HttpGet("gatherEvents")]
+    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
     public async Task<IActionResult> GatherEvents(CancellationToken cancellationToken)
     {
         var events = await notionEventParserService.ParseEvent(true);
@@ -69,6 +45,7 @@ public class BotController(
     }
 
     [HttpGet("sendEventsToChannel")]
+    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
     public async Task<IActionResult> SendEventsToChannel([FromQuery] bool isMorning, CancellationToken cancellationToken)
     {
         var message = await eventsMessageService.SendEventsMessageToChannel(isMorning);
@@ -76,6 +53,7 @@ public class BotController(
     }
 
     [HttpGet("sendWeatherSummaryToChannel")]
+    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
     public async Task<IActionResult> SendWeatherSummaryToChannel(CancellationToken cancellationToken)
     {
         await weatherMessageService.SendMessage(null);

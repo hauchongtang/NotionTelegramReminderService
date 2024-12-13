@@ -126,7 +126,7 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
         
         page.Properties.TryGetValue("Person", out var personPropValue);
         var personList = ((PeoplePropertyValue) personPropValue!).People.Select(x => x.Name).ToList();
-        return string.Join(" ,", personList);
+        return string.Join(", ", personList);
     }
 
     private static string? GetNotionEventStatus(Page page)
