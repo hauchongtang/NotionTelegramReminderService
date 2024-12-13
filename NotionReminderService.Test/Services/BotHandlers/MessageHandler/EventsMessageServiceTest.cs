@@ -70,25 +70,187 @@ public class EventsMessageServiceTest {
             x.SendRequest(It.Is<IRequest<Message>>(y => ((SendMessageRequest)y).Text.Contains(expectedToContain)),
                 It.IsAny<CancellationToken>()));
     }
+
+    [Test]
+    public void FormatEventDate_EventDateIsToday_ReturnsToday()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).Build());
+        var notionEventToday = new NotionEventBuilder()
+            .WithName("Event 1")
+            .WithLocation("KL")
+            .WithPerson("Person1, Person2")
+            .WithStatus("Status 1")
+            .WithTags("Tag 1")
+            .WithDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).Build())
+            .WithStartDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).Build())
+            .WithUrl("www.123123123123.org")
+            .Build();
+
+        var formattedResult = _eventsMessageService.FormatEventDate(notionEventToday);
+
+        Assert.That(formattedResult, Is.EqualTo("Today"));
+    }
     
-    // new NotionEventBuilder()
-    //     .WithName("Event 1")
-    //     .WithLocation("KL")
-    //     .WithPerson("Person1, Person2")
-    //     .WithStatus("Status 1")
-    //     .WithTags("Tag 1")
-    //     .WithDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).Build())
-    //     .WithStartDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).Build())
-    //     .WithUrl("www.123123123123.org")
-    //     .Build(),
-    // new NotionEventBuilder()
-    //     .WithName("Event 2")
-    //     .WithLocation("SG")
-    //     .WithPerson("Person2")
-    //     .WithStatus("Status 9")
-    //     .WithTags("Tag 0")
-    //     .WithDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).Build())
-    //     .WithStartDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).Build())
-    //     .WithUrl("www.123123123123.org")
-    //     .Build()
+    [Test]
+    public void FormatEventDate_EventDateIsTodayWithStartTime_ReturnsTodayWithStartTime()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).Build());
+        var startDate = new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).WithHour(6).Build();
+        var notionEventToday = new NotionEventBuilder()
+            .WithName("Event 1")
+            .WithLocation("KL")
+            .WithPerson("Person1, Person2")
+            .WithStatus("Status 1")
+            .WithTags("Tag 1")
+            .WithDate(startDate)
+            .WithStartDate(startDate)
+            .WithUrl("www.123123123123.org")
+            .Build();
+
+        var formattedResult = _eventsMessageService.FormatEventDate(notionEventToday);
+
+        Assert.That(formattedResult, Is.EqualTo($"Today @ {startDate:t}"));
+    }
+
+    [Test]
+    public void FormatEventDate_EventDateIsTodayWithDateEndTime_ReturnsTodayWithEndTime()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).Build());
+        var startDate = new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).Build();
+        var endDate = new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).WithHour(7).WithMinute(30).Build();
+        var notionEventToday = new NotionEventBuilder()
+            .WithName("Event 1")
+            .WithLocation("KL")
+            .WithPerson("Person1, Person2")
+            .WithStatus("Status 1")
+            .WithTags("Tag 1")
+            .WithDate(startDate)
+            .WithStartDate(startDate)
+            .WithEndDate(endDate)
+            .WithUrl("www.123123123123.org")
+            .Build();
+
+        var formattedResult = _eventsMessageService.FormatEventDate(notionEventToday);
+
+        Assert.That(formattedResult, Is.EqualTo($"Today \u2192 {endDate:F}"));
+    }
+
+    [Test]
+    public void FormatEventDate_EventDateIsTodayWithBothDateStartEndTime_ReturnsTodayWithStartEndTime()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).Build());
+        var startDate = new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).WithHour(6).Build();
+        var endDate = new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).WithHour(7).WithMinute(30).Build();
+        var notionEventToday = new NotionEventBuilder()
+            .WithName("Event 1")
+            .WithLocation("KL")
+            .WithPerson("Person1, Person2")
+            .WithStatus("Status 1")
+            .WithTags("Tag 1")
+            .WithDate(startDate)
+            .WithStartDate(startDate)
+            .WithEndDate(endDate)
+            .WithUrl("www.123123123123.org")
+            .Build();
+
+        var formattedResult = _eventsMessageService.FormatEventDate(notionEventToday);
+
+        Assert.That(formattedResult, Is.EqualTo($"Today @ {startDate:t} \u2192 {endDate:F}"));
+    }
+
+    [Test]
+    public void FormatEventDate_EventDateNotTodayAndIsWholeDayEvent_ReturnsLongDate()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).Build());
+        var startDate = new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).Build();
+        var notionEventToday = new NotionEventBuilder()
+            .WithName("Event 1")
+            .WithLocation("KL")
+            .WithPerson("Person1, Person2")
+            .WithStatus("Status 1")
+            .WithTags("Tag 1")
+            .WithDate(startDate)
+            .WithStartDate(startDate)
+            .WithUrl("www.123123123123.org")
+            .Build();
+
+        var formattedResult = _eventsMessageService.FormatEventDate(notionEventToday);
+        
+        Assert.That(formattedResult, Is.EqualTo($"{startDate:D}"));
+    }
+
+    [Test]
+    public void FormatEventDate_EventDateNotTodayWithOneDayEventStartTimeNoEndTime_ReturnsFullDateLong()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).Build());
+        var startDate = new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(6).Build();
+        var notionEventToday = new NotionEventBuilder()
+            .WithName("Event 1")
+            .WithLocation("KL")
+            .WithPerson("Person1, Person2")
+            .WithStatus("Status 1")
+            .WithTags("Tag 1")
+            .WithDate(startDate)
+            .WithStartDate(startDate)
+            .WithUrl("www.123123123123.org")
+            .Build();
+
+        var formattedResult = _eventsMessageService.FormatEventDate(notionEventToday);
+        
+        Assert.That(formattedResult, Is.EqualTo($"{startDate:F}"));
+    }
+
+    [Test]
+    public void FormatEventDate_EventDateNotTodayWithStartEndDateNoTime_ReturnsStartToEnd()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).Build());
+        var startDate = new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).Build();
+        var endDate = new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(13).Build();
+        var notionEventToday = new NotionEventBuilder()
+            .WithName("Event 1")
+            .WithLocation("KL")
+            .WithPerson("Person1, Person2")
+            .WithStatus("Status 1")
+            .WithTags("Tag 1")
+            .WithDate(startDate)
+            .WithStartDate(startDate)
+            .WithEndDate(endDate)
+            .WithUrl("www.123123123123.org")
+            .Build();
+
+        var formattedResult = _eventsMessageService.FormatEventDate(notionEventToday);
+        
+        Assert.That(formattedResult, Is.EqualTo($"{startDate:D} \u2192 {endDate:D}"));
+    }
+
+    [Test]
+    public void FormatEventDate_EventDateNotTodayWithStartEndDateWithTime_ReturnsStartToEndWithTime()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(10).Build());
+        var startDate = new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(1).Build();
+        var endDate = new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(13).WithHour(6).Build();
+        var notionEventToday = new NotionEventBuilder()
+            .WithName("Event 1")
+            .WithLocation("KL")
+            .WithPerson("Person1, Person2")
+            .WithStatus("Status 1")
+            .WithTags("Tag 1")
+            .WithDate(startDate)
+            .WithStartDate(startDate)
+            .WithEndDate(endDate)
+            .WithUrl("www.123123123123.org")
+            .Build();
+
+        var formattedResult = _eventsMessageService.FormatEventDate(notionEventToday);
+        
+        Assert.That(formattedResult, Is.EqualTo($"{startDate:F} \u2192 {endDate:F}"));
+    }
 }

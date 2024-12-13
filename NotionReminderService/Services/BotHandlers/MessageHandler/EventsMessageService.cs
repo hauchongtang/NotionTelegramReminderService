@@ -82,7 +82,7 @@ public class EventsMessageService(INotionEventParserService notionEventParserSer
         return message;
     }
 
-    private string FormatEventDate(NotionEvent notionEvent)
+    public string FormatEventDate(NotionEvent notionEvent)
     {
         if (notionEvent.Start is null) return string.Empty;
         
