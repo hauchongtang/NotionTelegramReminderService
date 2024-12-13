@@ -10,12 +10,12 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace NotionReminderService.Services.BotHandlers.MessageHandler;
 
-public class MessageService(INotionEventParserService notionEventParserService, ITelegramBotClient telegramBotClient,
+public class EventsEventsMessageService(INotionEventParserService notionEventParserService, ITelegramBotClient telegramBotClient,
     IDateTimeProvider dateTimeProvider, IOptions<BotConfiguration> botConfig, IOptions<NotionConfiguration> notionConfig, 
-    ILogger<IMessageService> logger)
-    : IMessageService
+    ILogger<IEventsMessageService> logger)
+    : IEventsMessageService
 {
-    public async Task<Message> SendMessageToChannel(bool isMorning)
+    public async Task<Message> SendEventsMessageToChannel(bool isMorning)
     {
         var events = await notionEventParserService.ParseEvent(isMorning);
         var ongoingEvents = await notionEventParserService.GetOngoingEvents();

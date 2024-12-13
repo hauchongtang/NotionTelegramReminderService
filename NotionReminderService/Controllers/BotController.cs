@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using NotionReminderService.Api.GoogleAi;
 using NotionReminderService.Config;
 using NotionReminderService.Services.BotHandlers.MessageHandler;
 using NotionReminderService.Services.BotHandlers.UpdateHandler;
+using NotionReminderService.Services.BotHandlers.WeatherHandler;
 using NotionReminderService.Services.NotionHandlers;
 using NotionReminderService.Utils;
 using Telegram.Bot;
@@ -18,7 +20,8 @@ public class BotController(
     ITelegramBotClient telegramBotClient,
     IUpdateService updateService,
     INotionEventParserService notionEventParserService,
-    IMessageService messageService,
+    IEventsMessageService eventsMessageService,
+    IWeatherMessageService weatherMessageService,
     IDateTimeProvider dateTimeProvider,
     ILogger<BotController> logger, 
     IOptions<BotConfiguration> botConfig)
@@ -68,7 +71,14 @@ public class BotController(
     [HttpGet("sendEventsToChannel")]
     public async Task<IActionResult> SendEventsToChannel([FromQuery] bool isMorning, CancellationToken cancellationToken)
     {
-        var message = await messageService.SendMessageToChannel(isMorning);
+        var message = await eventsMessageService.SendEventsMessageToChannel(isMorning);
         return Ok($"Message sent at {dateTimeProvider.Now}");
+    }
+
+    [HttpGet("sendWeatherSummaryToChannel")]
+    public async Task<IActionResult> SendWeatherSummaryToChannel(CancellationToken cancellationToken)
+    {
+        await weatherMessageService.SendMessage("jurong");
+        return Ok();
     }
 }
