@@ -30,6 +30,14 @@ builder.Services.Configure<WeatherConfiguration>(weatherConfigSection);
 var googleAiConfigSection = builder.Configuration.GetSection("GoogleAiConfiguration");
 builder.Services.Configure<GoogleAiConfiguration>(googleAiConfigSection);
 
+// Notion Configuration
+var notionConfiguration = builder.Configuration.GetSection("NotionConfiguration");
+builder.Services.Configure<NotionConfiguration>(notionConfiguration);
+builder.Services.AddNotionClient(options =>
+{
+    options.AuthToken = notionConfiguration.Get<NotionConfiguration>()!.NotionAuthToken;
+});
+
 // APIs
 builder.Services.AddScoped<IWeatherApi, WeatherApi>();
 builder.Services.AddScoped<IGoogleAiApi, GoogleAiApi>();
@@ -45,18 +53,13 @@ builder.Services.AddScoped<IDateTimeProvider, SystemDateTimeProvider>();
 // Hosted Services
 builder.Services.AddHostedService<TelegramBotSetup>();
 
+// Attributes
+builder.Services.AddScoped<SecretKeyValidationAttribute>();
+
 builder.Services.AddAuthentication();
 builder.Services.AddHealthChecks();
 builder.Services.AddControllers();
 builder.Services.ConfigureTelegramBotMvc();
-
-// Notion Configuration
-var notionConfiguration = builder.Configuration.GetSection("NotionConfiguration");
-builder.Services.Configure<NotionConfiguration>(notionConfiguration);
-builder.Services.AddNotionClient(options =>
-{
-    options.AuthToken = notionConfiguration.Get<NotionConfiguration>()!.NotionAuthToken;
-});
 
 var app = builder.Build();
 
