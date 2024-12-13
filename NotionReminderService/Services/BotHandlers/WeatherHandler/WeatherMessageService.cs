@@ -5,6 +5,7 @@ using NotionReminderService.Config;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace NotionReminderService.Services.BotHandlers.WeatherHandler;
 
@@ -42,6 +43,11 @@ public class WeatherMessageService(
                           <i>Powered by Gemini LLM agent using real time data from <a href="https://data.gov.sg">data.gov.sg</a></i>
                           Forcast for → {weatherData?[0].ValidPeriod.Text}
                           """;
-        await botClient.SendMessage(chat ?? new ChatId(botConfig.Value.ChatId), textToSend, ParseMode.Html);
+        
+        var replyMarkup = new InlineKeyboardMarkup()
+            .AddNewRow()
+            .AddButton(InlineKeyboardButton.WithCallbackData("Retrieve Again", "triggerForecast"));
+        await botClient.SendMessage(chat ?? new ChatId(botConfig.Value.ChatId), textToSend, ParseMode.Html,
+            replyMarkup: replyMarkup);
     }
 }
