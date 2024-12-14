@@ -9,9 +9,9 @@ public class NotionEventBuilder
     private string? _person;
     private string? _tag;
     private string? _status;
-    private DateTime _date;
-    private DateTime _start;
-    private DateTime _end;
+    private DateTime? _date;
+    private DateTime? _start;
+    private DateTime? _end;
     private string? _url;
 
     public NotionEventBuilder WithName(string name)

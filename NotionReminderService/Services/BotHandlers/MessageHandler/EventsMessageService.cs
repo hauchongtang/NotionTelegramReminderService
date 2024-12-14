@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 using NotionReminderService.Config;
 using NotionReminderService.Models.NotionEvent;
-using NotionReminderService.Services.NotionHandlers;
+using NotionReminderService.Services.NotionHandlers.NotionEventParser;
 using NotionReminderService.Utils;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -82,7 +82,7 @@ public class EventsMessageService(INotionEventParserService notionEventParserSer
         return message;
     }
 
-    private string FormatEventDate(NotionEvent notionEvent)
+    public string FormatEventDate(NotionEvent notionEvent)
     {
         if (notionEvent.Start is null) return string.Empty;
         

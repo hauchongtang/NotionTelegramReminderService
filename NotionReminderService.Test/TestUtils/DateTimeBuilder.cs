@@ -5,7 +5,7 @@ public class DateTimeBuilder
     private int _day = 1;
     private int _month = 1;
     private int _year = 2000;
-    private int _hour = 1;
+    private int _hour = 0;
     private int _minute = 0;
 
     public DateTimeBuilder WithYear(int year)

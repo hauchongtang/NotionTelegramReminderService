@@ -148,17 +148,17 @@ public class UpdateService(ITelegramBotClient telegramBotClient, IWeatherMessage
     {
         logger.LogInformation("Received inline keyboard callback from: {CallbackQueryId}", callbackQuery.Id);
         
+        await telegramBotClient.AnswerCallbackQuery(callbackQuery.Id, $"Received request");
+        
         switch (callbackQuery.Data)
         {
             case "triggerForecast":
             {
-                await telegramBotClient.AnswerCallbackQuery(callbackQuery.Id, $"Received request for ☁️ forecast");
                 await weatherMessageService.SendMessage(callbackQuery.Message!.Chat);
                 break;
             }
             default:
             {
-                await telegramBotClient.AnswerCallbackQuery(callbackQuery.Id, $"Received request for ☁️ forecast");
                 await telegramBotClient.SendMessage(callbackQuery.Message!.Chat,
                     $"Feature is unavailable. It might be on maintenance or is disabled.");
                 break;

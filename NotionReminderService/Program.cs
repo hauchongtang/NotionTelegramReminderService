@@ -6,6 +6,8 @@ using NotionReminderService.Services.BotHandlers.MessageHandler;
 using NotionReminderService.Services.BotHandlers.UpdateHandler;
 using NotionReminderService.Services.BotHandlers.WeatherHandler;
 using NotionReminderService.Services.NotionHandlers;
+using NotionReminderService.Services.NotionHandlers.NotionEventParser;
+using NotionReminderService.Services.NotionHandlers.NotionEventUpdater;
 using NotionReminderService.Services.NotionHandlers.NotionService;
 using NotionReminderService.Utils;
 using Serilog;
@@ -48,6 +50,7 @@ builder.Services.AddScoped<INotionEventParserService, NotionEventParserService>(
 builder.Services.AddScoped<IEventsMessageService, EventsMessageService>();
 builder.Services.AddScoped<INotionService, NotionService>();
 builder.Services.AddScoped<IWeatherMessageService, WeatherMessageService>();
+builder.Services.AddScoped<INotionEventUpdaterService, NotionEventUpdaterService>();
 builder.Services.AddScoped<IDateTimeProvider, SystemDateTimeProvider>();
 
 // Hosted Services

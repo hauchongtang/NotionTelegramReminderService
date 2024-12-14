@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using NotionReminderService.Services.BotHandlers.MessageHandler;
 using NotionReminderService.Services.BotHandlers.UpdateHandler;
 using NotionReminderService.Services.BotHandlers.WeatherHandler;
-using NotionReminderService.Services.NotionHandlers;
+using NotionReminderService.Services.NotionHandlers.NotionEventParser;
+using NotionReminderService.Services.NotionHandlers.NotionEventUpdater;
 using NotionReminderService.Utils;
 using Telegram.Bot.Types;
 
@@ -17,6 +18,7 @@ public class BotController(
     INotionEventParserService notionEventParserService,
     IEventsMessageService eventsMessageService,
     IWeatherMessageService weatherMessageService,
+    INotionEventUpdaterService notionEventUpdaterService,
     IDateTimeProvider dateTimeProvider,
     ILogger<BotController> logger)
     : ControllerBase
@@ -58,5 +60,22 @@ public class BotController(
     {
         await weatherMessageService.SendMessage(null);
         return Ok();
+    }
+
+    [HttpPatch("updateEventsToCompleted")]
+    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
+    public async Task<IActionResult> UpdateEventsToCompleted(CancellationToken cancellationToken)
+    {
+        var updatedPages = await notionEventUpdaterService.UpdateEventsToCompleted();
+        return Ok($"{updatedPages.Count} events updated to 'Completed'");
+    }
+
+    [HttpPatch("updateEventsToInProgress")]
+    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
+    public async Task<IActionResult> UpdateEventsToInProgress([FromQuery] bool isMorning,
+        CancellationToken cancellationToken)
+    {
+        var updatedPages = await notionEventUpdaterService.UpdateEventsToInProgress(isMorning);
+        return Ok($"{updatedPages.Count} events updated to 'In progress'");
     }
 }
