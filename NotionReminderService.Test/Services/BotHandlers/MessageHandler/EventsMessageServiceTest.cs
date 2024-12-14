@@ -4,6 +4,7 @@ using Moq;
 using NotionReminderService.Config;
 using NotionReminderService.Services.BotHandlers.MessageHandler;
 using NotionReminderService.Services.NotionHandlers;
+using NotionReminderService.Services.NotionHandlers.NotionEventParser;
 using NotionReminderService.Test.TestUtils;
 using NotionReminderService.Utils;
 using Telegram.Bot;

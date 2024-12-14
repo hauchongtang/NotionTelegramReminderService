@@ -3,7 +3,7 @@ using NotionReminderService.Models.NotionEvent;
 using NotionReminderService.Services.NotionHandlers.NotionService;
 using NotionReminderService.Utils;
 
-namespace NotionReminderService.Services.NotionHandlers;
+namespace NotionReminderService.Services.NotionHandlers.NotionEventParser;
 
 public class NotionEventParserService(INotionService notionService, IDateTimeProvider dateTimeProvider, 
     ILogger<INotionEventParserService> logger)
@@ -167,7 +167,7 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
         return paginatedList;
     }
 
-    public CompoundFilter GetDateBetweenFilter(DateTime from, DateTime to)
+    public static CompoundFilter GetDateBetweenFilter(DateTime from, DateTime to)
     {
         var onOrBeforeDate = new DateFilter("Date", onOrBefore: to);
         var onOrAfterDate = new DateFilter("Date", onOrAfter: from);

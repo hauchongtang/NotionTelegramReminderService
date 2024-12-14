@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 using NotionReminderService.Config;
 using NotionReminderService.Models.NotionEvent;
-using NotionReminderService.Services.NotionHandlers;
+using NotionReminderService.Services.NotionHandlers.NotionEventParser;
 using NotionReminderService.Utils;
 using Telegram.Bot;
 using Telegram.Bot.Types;

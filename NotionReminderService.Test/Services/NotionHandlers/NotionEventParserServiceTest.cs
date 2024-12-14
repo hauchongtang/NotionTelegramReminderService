@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Notion.Client;
 using NotionReminderService.Services.NotionHandlers;
+using NotionReminderService.Services.NotionHandlers.NotionEventParser;
 using NotionReminderService.Services.NotionHandlers.NotionService;
 using NotionReminderService.Test.TestUtils;
 using NotionReminderService.Test.TestUtils.Page;
