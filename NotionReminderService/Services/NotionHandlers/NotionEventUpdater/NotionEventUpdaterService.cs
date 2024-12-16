@@ -54,11 +54,11 @@ public class NotionEventUpdaterService(
         PaginatedList<Page> eventsToUpdate;
         if (isMorningJob)
         {
-            eventsToUpdate = await GetEvents(dateTime.Now.Date, dateTime.Now.Date.AddHours(6));
+            eventsToUpdate = await GetEvents(dateTime.Now.Date, dateTime.Now.Date.AddHours(12));
         }
         else
         {
-            eventsToUpdate = await GetEvents(dateTime.Now.Date.AddHours(6).AddMinutes(1),
+            eventsToUpdate = await GetEvents(dateTime.Now.Date.AddHours(12).AddMinutes(1),
                 dateTime.Now.Date.AddHours(23).AddMinutes(59));
         }
 
