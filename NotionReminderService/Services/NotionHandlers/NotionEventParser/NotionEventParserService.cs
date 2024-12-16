@@ -157,7 +157,7 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
         if (!page.Properties.ContainsKey("Trigger Mini Reminder")) return null;
 
         page.Properties.TryGetValue("Trigger Mini Reminder", out var selectPropValue);
-        var triggerProperty = ((SelectPropertyValue)selectPropValue!).Select.Name;
+        var triggerProperty = ((SelectPropertyValue)selectPropValue!).Select?.Name;
         return triggerProperty switch
         {
             "On the day itself" => ReminderPeriodOptions.OnTheDayItself,
