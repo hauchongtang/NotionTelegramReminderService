@@ -118,4 +118,29 @@ public class EventsMessageService(INotionEventParserService notionEventParserSer
                && notionEvent.Start.Value.Month == dateTimeProvider.Now.Month
                && notionEvent.Start.Value.Day == dateTimeProvider.Now.Day;
     }
+
+    public async Task<Message> SendMiniReminderMessageToChannel()
+    {
+        var events = await notionEventParserService.GetMiniReminders();
+        var messageBody = $"""
+                           <b>⚠️ Reminders</b> | <b>{events.Count} Reminders(s) Today</b>
+                           --------------------------
+
+                           """;
+        foreach (var notionEvent in events)
+        {
+            var formattedDate = FormatEventDate(notionEvent);
+            messageBody += $"""
+
+                            For <b>🌟 <a href="{notionEvent.Url}">{notionEvent.Name}</a></b>, 
+                            that is happening on {formattedDate},
+                            please be reminded to: {notionEvent.MiniReminderDesc}.
+
+                            """;
+        }
+
+        var message = await telegramBotClient.SendMessage(new ChatId(botConfig.Value.ChatId), messageBody,
+            ParseMode.Html);
+        return message;
+    }
 }

@@ -20,7 +20,8 @@ public class NotionEventUpdaterService(
     {
         var dateTimeAtStartOfDay = dateTime.Now.Date.AddMonths(-2);
         var dateTimeAtEndOfDay = dateTime.Now.Date.AddHours(23).AddMinutes(59);
-        var dateFilter = NotionEventParserService.GetDateBetweenFilter(from: dateTimeAtStartOfDay, to: dateTimeAtEndOfDay);
+        var dateFilter = NotionEventParserService.GetDateBetweenFilter(propertyName: "Date", from: dateTimeAtStartOfDay,
+            to: dateTimeAtEndOfDay);
         var databaseQuery = new DatabasesQueryParameters
         {
             Filter = dateFilter,
@@ -67,7 +68,7 @@ public class NotionEventUpdaterService(
 
     private async Task<PaginatedList<Page>> GetEvents(DateTime from, DateTime to)
     {
-        var dateFilter = NotionEventParserService.GetDateBetweenFilter(from: from , to: to);
+        var dateFilter = NotionEventParserService.GetDateBetweenFilter("Date", from: from , to: to);
         var databaseQuery = new DatabasesQueryParameters
         {
             Filter = dateFilter,
