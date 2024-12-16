@@ -35,8 +35,17 @@ public class NotionEventUpdaterService(
         };
         var endsTodayEventList = await notionService.GetPaginatedList(databaseQuery);
         endsTodayEventList.Results = endsTodayEventList.Results.Where(x =>
-            ((StatusPropertyValue)x.Properties["Status"]).Status.Name != "Done" && 
-            ((DatePropertyValue)x.Properties["Date"]).Date.End <= dateTimeAtEndOfDay).ToList();
+            ((StatusPropertyValue)x.Properties["Status"]).Status.Name != "Done"
+            &&
+            (
+                ((DatePropertyValue)x.Properties["Date"]).Date.End <= dateTimeAtEndOfDay
+                ||
+                (
+                    ((DatePropertyValue)x.Properties["Date"]).Date.End is null 
+                    &&
+                    ((DatePropertyValue)x.Properties["Date"]).Date.Start <= dateTimeAtEndOfDay)
+                )
+            ).ToList();
         return endsTodayEventList;
     }
 
