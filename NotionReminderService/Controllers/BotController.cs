@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using NotionReminderService.Services.BotHandlers.MessageHandler;
 using NotionReminderService.Services.BotHandlers.UpdateHandler;
 using NotionReminderService.Services.BotHandlers.WeatherHandler;
-using NotionReminderService.Services.NotionHandlers.NotionEventParser;
 using NotionReminderService.Services.NotionHandlers.NotionEventUpdater;
 using NotionReminderService.Utils;
 using Telegram.Bot.Types;
@@ -15,7 +14,6 @@ namespace NotionReminderService.Controllers;
 [AllowAnonymous]
 public class BotController(
     IUpdateService updateService,
-    INotionEventParserService notionEventParserService,
     IEventsMessageService eventsMessageService,
     IWeatherMessageService weatherMessageService,
     INotionEventUpdaterService notionEventUpdaterService,
@@ -38,20 +36,20 @@ public class BotController(
         return Ok();
     }
 
-    [HttpGet("gatherEvents")]
-    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
-    public async Task<IActionResult> GatherEvents(CancellationToken cancellationToken)
-    {
-        var events = await notionEventParserService.ParseEvent(true);
-        return Ok(events);
-    }
-
     [HttpGet("sendEventsToChannel")]
     [ServiceFilter(typeof(SecretKeyValidationAttribute))]
     public async Task<IActionResult> SendEventsToChannel([FromQuery] bool isMorning, CancellationToken cancellationToken)
     {
         var message = await eventsMessageService.SendEventsMessageToChannel(isMorning);
         return Ok($"Message sent at {dateTimeProvider.Now}");
+    }
+
+    [HttpGet("sendEventRemindersToChannel")]
+    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
+    public async Task<IActionResult> SendRemindersToChannel(CancellationToken cancellationToken)
+    {
+        var message = await eventsMessageService.SendMiniReminderMessageToChannel();
+        return Ok(message.Text);
     }
 
     [HttpGet("sendWeatherSummaryToChannel")]

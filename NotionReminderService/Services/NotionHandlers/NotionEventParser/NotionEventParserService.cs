@@ -28,13 +28,7 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
         var events = new List<NotionEvent>();
         foreach (var page in pages.Results)
         {
-            var notionEventName = GetNotionEventName(page);
-            var location = GetNotionEventLocation(page);
-            var persons = GetNotionEventPerson(page);
-            var status = GetNotionEventStatus(page);
-            var tags = GetNotionEventTag(page);
-            var date = GetNotionEventDate(page);
-            var notionEvent = GenerateNotionEvent(page, date, notionEventName, location, persons, status, tags);
+            var notionEvent = GetNotionEvent(page);
             if (notionEvent is null) continue;
             events.Add(notionEvent);
         }
@@ -50,13 +44,7 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
         var events = new List<NotionEvent>();
         foreach (var page in pages.Results)
         {
-            var notionEventName = GetNotionEventName(page);
-            var location = GetNotionEventLocation(page);
-            var persons = GetNotionEventPerson(page);
-            var status = GetNotionEventStatus(page);
-            var tags = GetNotionEventTag(page);
-            var date = GetNotionEventDate(page);
-            var notionEvent = GenerateNotionEvent(page, date, notionEventName, location, persons, status, tags);
+            var notionEvent = GetNotionEvent(page);
             if (notionEvent is null) continue;
             events.Add(notionEvent);
         }
@@ -66,8 +54,23 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
         return ongoingEvents.ToList();
     }
 
-    private static NotionEvent? GenerateNotionEvent(Page page, Date? date, string? notionEventName, string? location, string? persons, 
-        string? status, string? tags)
+    private static NotionEvent? GetNotionEvent(Page page)
+    {
+        var notionEventName = GetNotionEventName(page);
+        var location = GetNotionEventLocation(page);
+        var persons = GetNotionEventPerson(page);
+        var status = GetNotionEventStatus(page);
+        var tags = GetNotionEventTag(page);
+        var date = GetNotionEventDate(page);
+        var miniReminderDesc = GetNotionMiniReminderDescription(page);
+        var miniReminderTrigger = GetNotionMiniReminderTrigger(page);
+        var notionEvent = GenerateNotionEvent(page, date, notionEventName, location, persons, status, tags,
+            miniReminderDesc, miniReminderTrigger);
+        return notionEvent;
+    }
+
+    private static NotionEvent? GenerateNotionEvent(Page page, Date? date, string? notionEventName, string? location,
+        string? persons, string? status, string? tags, string? miniReminderDesc, ReminderPeriodOptions? options)
     {
         if (date is null) return null;
         
@@ -81,7 +84,9 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
             Start = date.Start!.Value,
             End = date.End.HasValue ? date.End!.Value : null,
             Date = date.Start!.Value,
-            Url = page.Url
+            Url = page.Url,
+            MiniReminderDesc = miniReminderDesc,
+            ReminderPeriod = options
         };
 
         return notionEvent;
@@ -147,9 +152,35 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
         return string.Join(" | ", tags);
     }
 
-    public async Task<PaginatedList<Page>> GetPages(DateTime from, DateTime to)
+    private static ReminderPeriodOptions? GetNotionMiniReminderTrigger(Page page)
     {
-        var betweenDates = GetDateBetweenFilter(from, to);
+        if (!page.Properties.ContainsKey("Trigger Mini Reminder")) return null;
+
+        page.Properties.TryGetValue("Trigger Mini Reminder", out var selectPropValue);
+        var triggerProperty = ((SelectPropertyValue)selectPropValue!).Select.Name;
+        return triggerProperty switch
+        {
+            "On the day itself" => ReminderPeriodOptions.OnTheDayItself,
+            "One day before" => ReminderPeriodOptions.OneDayBefore,
+            "Two days before" => ReminderPeriodOptions.TwoDaysBefore,
+            "One week before" => ReminderPeriodOptions.OneWeekBefore,
+            _ => null
+        };
+    }
+
+    private static string? GetNotionMiniReminderDescription(Page page)
+    {
+        if (!page.Properties.ContainsKey("Mini Reminder Description")) return null;
+
+        page.Properties.TryGetValue("Mini Reminder Description", out var richTextPropValue);
+        var description =
+            ((RichTextPropertyValue)richTextPropValue!).RichText.Aggregate("", (s, rt) => s + rt.PlainText);
+        return description;
+    }
+
+    private async Task<PaginatedList<Page>> GetPages(DateTime from, DateTime to)
+    {
+        var betweenDates = GetDateBetweenFilter("Date", from, to);
         
         var databaseQuery = new DatabasesQueryParameters
         {
@@ -167,10 +198,10 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
         return paginatedList;
     }
 
-    public static CompoundFilter GetDateBetweenFilter(DateTime from, DateTime to)
+    public static CompoundFilter GetDateBetweenFilter(string propertyName, DateTime from, DateTime to)
     {
-        var onOrBeforeDate = new DateFilter("Date", onOrBefore: to);
-        var onOrAfterDate = new DateFilter("Date", onOrAfter: from);
+        var onOrBeforeDate = new DateFilter(propertyName, onOrBefore: to);
+        var onOrAfterDate = new DateFilter(propertyName, onOrAfter: from);
         var betweenDates = new CompoundFilter
         {
             And =
@@ -180,5 +211,61 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
             ]
         };
         return betweenDates;
+    }
+
+    public async Task<List<NotionEvent>> GetMiniReminders()
+    {
+        var eventsWithMiniReminders = await GetEventsWithMiniReminders();
+        var events = new List<NotionEvent>();
+        foreach (var page in eventsWithMiniReminders.Results)
+        {
+            var notionEvent = GetNotionEvent(page);
+            if (notionEvent is null) continue;
+            if (notionEvent.MiniReminderDesc is null && notionEvent.ReminderPeriod is null) continue;
+            if (!IsMiniReminderToTriggerToday(notionEvent)) continue;
+            
+            events.Add(notionEvent);
+        }
+
+        return events;
+    }
+
+    private bool IsMiniReminderToTriggerToday(NotionEvent notionEvent)
+    {
+        if (notionEvent.MiniReminderDesc is null || notionEvent.ReminderPeriod is null) return false;
+        if (notionEvent.Start is null) return false;
+
+        return notionEvent.ReminderPeriod switch
+        {
+            ReminderPeriodOptions.OnTheDayItself => notionEvent.Start.Value.Date == dateTimeProvider.Now.Date,
+            ReminderPeriodOptions.OneDayBefore => notionEvent.Start.Value.Date.AddDays(-1) == dateTimeProvider.Now.Date,
+            ReminderPeriodOptions.TwoDaysBefore =>
+                notionEvent.Start.Value.Date.AddDays(-2) == dateTimeProvider.Now.Date,
+            ReminderPeriodOptions.OneWeekBefore =>
+                notionEvent.Start.Value.Date.AddDays(-7) == dateTimeProvider.Now.Date,
+            _ => false
+        };
+    }
+
+    private async Task<PaginatedList<Page>> GetEventsWithMiniReminders()
+    {
+        var filter = GetDateBetweenFilter("Date", dateTimeProvider.Now.Date,
+            dateTimeProvider.Now.Date.AddDays(8));
+        filter.And.Add(new RichTextFilter("Mini Reminder Description", isNotEmpty: true));
+        filter.And.Add(new SelectFilter("Trigger Mini Reminder", isNotEmpty: true));
+        var databaseQuery = new DatabasesQueryParameters
+        {
+            Filter = filter,
+            Sorts =
+            [
+                new Sort
+                {
+                    Direction = Direction.Ascending,
+                    Property = "Date"
+                }
+            ]
+        };
+        var paginatedList = await notionService.GetPaginatedList(databaseQuery);
+        return paginatedList;
     }
 }

@@ -7,5 +7,5 @@ public interface INotionEventParserService
 {
     public Task<List<NotionEvent>> ParseEvent(bool isMorning);
     public Task<List<NotionEvent>> GetOngoingEvents();
-    public Task<PaginatedList<Page>> GetPages(DateTime from, DateTime to);
+    public Task<List<NotionEvent>> GetMiniReminders();
 }
