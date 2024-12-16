@@ -133,8 +133,8 @@ public class EventsMessageService(INotionEventParserService notionEventParserSer
             messageBody += $"""
 
                             For <b>🌟 <a href="{notionEvent.Url}">{notionEvent.Name}</a></b>, 
-                            happening on {formattedDate},
-                            be reminded that: {notionEvent.MiniReminderDesc}.
+                            that is happening on {formattedDate},
+                            please be reminded to: {notionEvent.MiniReminderDesc}.
 
                             """;
         }
