@@ -119,9 +119,11 @@ public class EventsMessageService(INotionEventParserService notionEventParserSer
                && notionEvent.Start.Value.Day == dateTimeProvider.Now.Day;
     }
 
-    public async Task<Message> SendMiniReminderMessageToChannel()
+    public async Task<Message?> SendMiniReminderMessageToChannel()
     {
         var events = await notionEventParserService.GetMiniReminders();
+        if (events.Count == 0) return null;
+        
         var messageBody = $"""
                            <b>⚠️ Reminders</b> | <b>{events.Count} Reminders(s) Today</b>
                            --------------------------
@@ -129,6 +131,8 @@ public class EventsMessageService(INotionEventParserService notionEventParserSer
                            """;
         foreach (var notionEvent in events)
         {
+            if (notionEvent.MiniReminderDesc is null || notionEvent.ReminderPeriod is null) continue;
+            
             var formattedDate = FormatEventDate(notionEvent);
             messageBody += $"""
 

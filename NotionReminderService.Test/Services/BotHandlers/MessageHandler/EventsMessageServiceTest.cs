@@ -2,8 +2,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using NotionReminderService.Config;
+using NotionReminderService.Models.NotionEvent;
 using NotionReminderService.Services.BotHandlers.MessageHandler;
-using NotionReminderService.Services.NotionHandlers;
 using NotionReminderService.Services.NotionHandlers.NotionEventParser;
 using NotionReminderService.Test.TestUtils;
 using NotionReminderService.Utils;
@@ -59,8 +59,31 @@ public class EventsMessageServiceTest {
         _dateTimeProvider.Setup(x => x.Now)
             .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).Build());
         _notionEventParserService.Setup(x =>
-            x.ParseEvent(It.IsAny<bool>())).ReturnsAsync([]);
-        _notionEventParserService.Setup(x => x.GetOngoingEvents()).ReturnsAsync([]);
+            x.ParseEvent(It.IsAny<bool>())).ReturnsAsync([
+            new NotionEventBuilder()
+                .WithName("Test Event").WithDate(DateTime.Now)
+                .WithMiniReminderDesc("To do something").WithReminderPeriodOptions(ReminderPeriodOptions.TwoDaysBefore)
+                .Build(),
+            new NotionEventBuilder()
+                .WithName("Test Event 1").WithDate(DateTime.Now)
+                .WithMiniReminderDesc("To do something 1").WithReminderPeriodOptions(ReminderPeriodOptions.TwoDaysBefore)
+                .Build(),
+            new NotionEventBuilder()
+                .WithName("Test Event 2").WithDate(DateTime.Now)
+                .WithMiniReminderDesc("To do something 2").WithReminderPeriodOptions(null)
+                .Build(),
+            new NotionEventBuilder()
+                .WithName("Test Event 3").WithDate(DateTime.Now)
+                .WithMiniReminderDesc(null).WithReminderPeriodOptions(ReminderPeriodOptions.TwoDaysBefore)
+                .Build()
+        ]);
+        _notionEventParserService.Setup(x => x.GetOngoingEvents()).ReturnsAsync([
+            new NotionEventBuilder()
+                .WithName("Test Event 3").WithDate(DateTime.Now)
+                .WithStartDate(DateTime.Now).WithEndDate(DateTime.Now.AddDays(10))
+                .WithMiniReminderDesc(null).WithReminderPeriodOptions(ReminderPeriodOptions.TwoDaysBefore)
+                .Build()
+        ]);
         _telegramBotClient
             .Setup(x => x.SendRequest(It.IsAny<IRequest<Message>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Message());
@@ -253,5 +276,55 @@ public class EventsMessageServiceTest {
         var formattedResult = _eventsMessageService.FormatEventDate(notionEventToday);
         
         Assert.That(formattedResult, Is.EqualTo($"{startDate:F} \u2192 {endDate:F}"));
+    }
+
+    [Test]
+    public async Task SendMiniReminderMessageToChannel_ZeroReminders_MessageNotSentToChannel()
+    {
+        _notionEventParserService.Setup(x => x.GetMiniReminders()).ReturnsAsync([]);
+
+        var message = await _eventsMessageService.SendMiniReminderMessageToChannel();
+
+        Assert.That(message, Is.EqualTo(null));
+        _telegramBotClient.Verify(x => x.SendRequest(It.IsAny<IRequest<Message>>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Test]
+    public async Task SendMiniReminderMessageToChannel_HaveReminders_MessageSentToChannel()
+    {
+        _notionEventParserService.Setup(x => x.GetMiniReminders()).ReturnsAsync([
+            new NotionEventBuilder()
+                .WithName("Test Event").WithDate(DateTime.Now)
+                .WithMiniReminderDesc("To do something").WithReminderPeriodOptions(ReminderPeriodOptions.TwoDaysBefore)
+                .Build(),
+            new NotionEventBuilder()
+                .WithName("Test Event 1").WithDate(DateTime.Now)
+                .WithMiniReminderDesc("To do something 1").WithReminderPeriodOptions(ReminderPeriodOptions.TwoDaysBefore)
+                .Build(),
+            new NotionEventBuilder()
+                .WithName("Test Event 2").WithDate(DateTime.Now)
+                .WithMiniReminderDesc("To do something 2").WithReminderPeriodOptions(null)
+                .Build(),
+            new NotionEventBuilder()
+                .WithName("Test Event 3").WithDate(DateTime.Now)
+                .WithMiniReminderDesc(null).WithReminderPeriodOptions(ReminderPeriodOptions.TwoDaysBefore)
+                .Build()
+        ]);
+        _telegramBotClient
+            .Setup(x => x.SendRequest(It.IsAny<IRequest<Message>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Message());
+
+        var message = await _eventsMessageService.SendMiniReminderMessageToChannel();
+        
+        Assert.That(message, !Is.Null);
+        _telegramBotClient.Verify(x =>
+            x.SendRequest(
+                It.Is<IRequest<Message>>(y =>
+                    ((SendMessageRequest)y).Text.Contains("Test Event") 
+                    && ((SendMessageRequest)y).Text.Contains("Test Event 1")
+                    && !((SendMessageRequest)y).Text.Contains("Test Event 2")
+                    && !((SendMessageRequest)y).Text.Contains("Test Event 3")),
+                It.IsAny<CancellationToken>()), Times.Once);
     }
 }

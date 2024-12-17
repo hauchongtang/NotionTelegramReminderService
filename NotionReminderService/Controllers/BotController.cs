@@ -49,7 +49,7 @@ public class BotController(
     public async Task<IActionResult> SendRemindersToChannel(CancellationToken cancellationToken)
     {
         var message = await eventsMessageService.SendMiniReminderMessageToChannel();
-        return Ok(message.Text);
+        return Ok(message is null ? "No reminders to send." : message.Text);
     }
 
     [HttpGet("sendWeatherSummaryToChannel")]

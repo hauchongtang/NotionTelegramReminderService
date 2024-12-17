@@ -5,7 +5,6 @@ using NotionReminderService.HostedServices.TelegramBot;
 using NotionReminderService.Services.BotHandlers.MessageHandler;
 using NotionReminderService.Services.BotHandlers.UpdateHandler;
 using NotionReminderService.Services.BotHandlers.WeatherHandler;
-using NotionReminderService.Services.NotionHandlers;
 using NotionReminderService.Services.NotionHandlers.NotionEventParser;
 using NotionReminderService.Services.NotionHandlers.NotionEventUpdater;
 using NotionReminderService.Services.NotionHandlers.NotionService;
@@ -18,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
     .ReadFrom.Services(services)
+    .WriteTo.Console()
     .Enrich.FromLogContext());
 
 // Setup configuration

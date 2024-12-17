@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using Notion.Client;
-using NotionReminderService.Services.NotionHandlers;
+using NotionReminderService.Models.NotionEvent;
 using NotionReminderService.Services.NotionHandlers.NotionEventParser;
 using NotionReminderService.Services.NotionHandlers.NotionService;
 using NotionReminderService.Test.TestUtils;
@@ -350,5 +350,89 @@ public class NotionEventParserServiceTest
         var events = await _notionEventParserService.GetOngoingEvents();
 
         Assert.That(events, Is.Empty);
+    }
+
+    [Test]
+    public async Task GetMiniReminders_MixOfEventsWithAndWithoutMiniReminders_ReturnsRemindersToBeTriggeredToday()
+    {
+        var firstDec2024 = new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(13).WithMinute(30).Build();
+        _dateTimeProvider.Setup(x => x.Now).Returns(firstDec2024);
+        
+        var paginatedList = new PaginatedList<Page>
+        {
+            Results =
+            [
+                new Page
+                {
+                    Properties = new Dictionary<string, PropertyValue>
+                    {
+                        { "Name", new TitlePropertyBuilder().WithTitle("Event 1").Build() },
+                        { "Date", new DatePropertyBuilder()
+                            .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(2).WithHour(12)
+                                .WithMinute(30).Build())
+                            .Build()
+                        },
+                        {
+                            "Mini Reminder Description", new RichTextPropertyBuilder().WithText("To do something").Build()
+                        },
+                        {
+                            "Trigger Mini Reminder",
+                            new SelectPropertyBuilder().WithSelectOption(new SelectOption { Name = "One day before" })
+                                .Build()
+                        }
+                    }
+                },
+                new Page
+                {
+                    Properties = new Dictionary<string, PropertyValue>
+                    {
+                        { "Name", new TitlePropertyBuilder().WithTitle("Event 2").Build() },
+                        { "Date", new DatePropertyBuilder()
+                            .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(13).WithMinute(31).Build())
+                            .WithEndDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).Build())
+                            .Build()
+                        },
+                        {
+                            "Mini Reminder Description", new RichTextPropertyBuilder().WithText("To do something").Build()
+                        },
+                        {
+                            "Trigger Mini Reminder",
+                            new SelectPropertyBuilder().WithSelectOption(null)
+                                .Build()
+                        }
+                    }
+                },
+                new Page
+                {
+                    Properties = new Dictionary<string, PropertyValue>
+                    {
+                        { "Name", new TitlePropertyBuilder().WithTitle("Event 2").Build() },
+                        { "Date", new DatePropertyBuilder()
+                            .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(13).WithMinute(31).Build())
+                            .WithEndDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).Build())
+                            .Build()
+                        },
+                        {
+                            "Mini Reminder Description", new RichTextPropertyBuilder().WithText("").Build()
+                        },
+                        {
+                            "Trigger Mini Reminder",
+                            new SelectPropertyBuilder().WithSelectOption(new SelectOption()).Build()
+                        }
+                    }
+                }
+            ]
+        };
+        _notionService.Setup(x => x.GetPaginatedList(It.IsAny<DatabasesQueryParameters>())).ReturnsAsync(paginatedList);
+
+        var miniReminders = await _notionEventParserService.GetMiniReminders();
+        
+        Assert.That(miniReminders, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(miniReminders[0].Name, Is.EqualTo("Event 1"));
+            Assert.That(miniReminders[0].MiniReminderDesc, Is.EqualTo("To do something"));
+            Assert.That(miniReminders[0].ReminderPeriod, Is.EqualTo(ReminderPeriodOptions.OneDayBefore));
+        });
     }
 }

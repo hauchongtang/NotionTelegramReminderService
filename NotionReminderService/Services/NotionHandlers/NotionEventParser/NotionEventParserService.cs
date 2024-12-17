@@ -18,12 +18,17 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
             var currentDt = dateTimeProvider.Now;
             from = new DateTime(currentDt.Year, currentDt.Month, currentDt.Day);
             to = currentDt.AddDays(3);
+            logger.LogInformation("NotionEventParserService.ParseEvent for (isMorning=true) --> From: {from} To: {to}",
+                from, to);
         }
         else
         {
             from = dateTimeProvider.Now;
             to = dateTimeProvider.Now.AddDays(3);
+            logger.LogInformation("NotionEventParserService.ParseEvent for (isMorning=false) --> From: {from} To: {to}",
+                from, to);
         }
+        
         var pages = await GetPages(from, to);
         var events = new List<NotionEvent>();
         foreach (var page in pages.Results)
@@ -33,6 +38,8 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
             events.Add(notionEvent);
         }
 
+        logger.LogInformation("NotionEventParserService.ParseEvent for (isMorning={isMorning}) --> {eventsCount} events to be sent",
+            events.Count, isMorning);
         return events;
     }
 
@@ -51,6 +58,8 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
 
         var ongoingEvents = events.Where(e => e is { Start: not null, End: not null } 
                                               && dateTimeProvider.Now >= e.Start.Value && dateTimeProvider.Now <= e.End.Value);
+        logger.LogInformation("NotionEventParserService.GetOngoingEvents --> {eventCount} ongoing events to be sent",
+            events.Count);
         return ongoingEvents.ToList();
     }
 
@@ -227,6 +236,8 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
             events.Add(notionEvent);
         }
 
+        logger.LogInformation("NotionEventParserService.GetMiniReminders --> {eventCount} mini reminders to be sent.",
+            events.Count);
         return events;
     }
 

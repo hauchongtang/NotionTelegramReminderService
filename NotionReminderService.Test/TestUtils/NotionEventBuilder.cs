@@ -13,6 +13,8 @@ public class NotionEventBuilder
     private DateTime? _start;
     private DateTime? _end;
     private string? _url;
+    private string? _miniReminderDesc;
+    private ReminderPeriodOptions? _reminderPeriodOptions;
 
     public NotionEventBuilder WithName(string name)
     {
@@ -67,6 +69,18 @@ public class NotionEventBuilder
         _url = url;
         return this;
     }
+
+    public NotionEventBuilder WithMiniReminderDesc(string? desc)
+    {
+        _miniReminderDesc = desc;
+        return this;
+    }
+
+    public NotionEventBuilder WithReminderPeriodOptions(ReminderPeriodOptions? periodOptions)
+    {
+        _reminderPeriodOptions = periodOptions;
+        return this;
+    }
     
     public NotionEvent Build()
     {
@@ -80,7 +94,9 @@ public class NotionEventBuilder
             Date = _date,
             Start = _start,
             End = _end,
-            Url = _url
+            Url = _url,
+            MiniReminderDesc = _miniReminderDesc,
+            ReminderPeriod = _reminderPeriodOptions
         };
     }
 }
