@@ -20,6 +20,10 @@ public class NotionEventUpdaterService(
     {
         var dateTimeAtStartOfDay = dateTime.Now.Date.AddMonths(-2);
         var dateTimeAtEndOfDay = dateTime.Now.Date.AddHours(23).AddMinutes(59);
+        
+        logger.LogInformation("NotionEventUpdaterService.GetEventsEndingToday --> from: {from} to: {to}",
+            dateTimeAtStartOfDay, dateTimeAtEndOfDay);
+        
         var dateFilter = NotionEventParserService.GetDateBetweenFilter(propertyName: "Date", from: dateTimeAtStartOfDay,
             to: dateTimeAtEndOfDay);
         var databaseQuery = new DatabasesQueryParameters
@@ -47,6 +51,10 @@ public class NotionEventUpdaterService(
                     ((DatePropertyValue)x.Properties["Date"]).Date.Start <= dateTimeAtEndOfDay)
                 )
             ).ToList();
+
+        logger.LogInformation("NotionEventUpdaterService.GetEventsEndingToday --> {eventCount} event(s) end today.",
+            endsTodayEventList.Results.Count);
+        
         return endsTodayEventList;
     }
 
@@ -55,12 +63,25 @@ public class NotionEventUpdaterService(
         PaginatedList<Page> eventsToUpdate;
         if (isMorningJob)
         {
-            eventsToUpdate = await GetEvents(dateTime.Now.Date, dateTime.Now.Date.AddHours(12));
+            var from = dateTime.Now.Date;
+            var to = dateTime.Now.Date.AddHours(12);
+            
+            logger.LogInformation(
+                "NotionEventUpdaterService.UpdateEventsToInProgress (isMorning=true) --> Retrieving events from: {from} to: {to}", from,
+                to);
+            
+            eventsToUpdate = await GetEvents(from, to);
         }
         else
         {
-            eventsToUpdate = await GetEvents(dateTime.Now.Date.AddHours(12).AddMinutes(1),
-                dateTime.Now.Date.AddHours(23).AddMinutes(59));
+            var from = dateTime.Now.Date.AddHours(12).AddMinutes(1);
+            var to = dateTime.Now.Date.AddHours(23).AddMinutes(59);
+            
+            logger.LogInformation(
+                "NotionEventUpdaterService.UpdateEventsToInProgress (isMorning=false) --> Retrieving events from: {from} to: {to}", from,
+                to);
+            
+            eventsToUpdate = await GetEvents(from, to);
         }
 
         return await notionService.UpdateEventsToInProgress(eventsToUpdate);
