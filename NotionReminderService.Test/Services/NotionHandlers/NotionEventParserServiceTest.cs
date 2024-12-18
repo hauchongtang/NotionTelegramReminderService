@@ -353,6 +353,134 @@ public class NotionEventParserServiceTest
     }
 
     [Test]
+    public void IsEventStillOngoing_StartDateIsTodayWithoutTimeSpecified_StillOngoing()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).Build());
+        var notionEvent = new NotionEventBuilder()
+            .WithName("Ongoing event")
+            .WithStartDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).Build())
+            .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(16).Build())
+            .Build();
+
+        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        
+        Assert.That(eventStillOngoing, Is.True);
+    }
+
+    [Test]
+    public void IsEventStillOngoing_StartDateIsTodayWithTimeSpecified_TimeBeforeNow_StillOngoing()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(10).Build());
+        var notionEvent = new NotionEventBuilder()
+            .WithName("Ongoing event")
+            .WithStartDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(9).WithMinute(59).Build())
+            .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).Build())
+            .Build();
+
+        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        
+        Assert.That(eventStillOngoing, Is.True);
+    }
+
+    [Test]
+    public void IsEventStillOngoing_StartDateIsTodayWithTimeSpecified_TimeAfterNow_NotOngoing()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(9).WithMinute(59).Build());
+        var notionEvent = new NotionEventBuilder()
+            .WithName("Ongoing event")
+            .WithStartDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(10).Build())
+            .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).Build())
+            .Build();
+
+        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        
+        Assert.That(eventStillOngoing, Is.False);
+    }
+    
+    [Test]
+    public void IsEventStillOngoing_StartDateIsTodayWithTimeSpecified_TimeIsNow_StillOngoing()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(10).Build());
+        var notionEvent = new NotionEventBuilder()
+            .WithName("Ongoing event")
+            .WithStartDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(10).Build())
+            .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).Build())
+            .Build();
+
+        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        
+        Assert.That(eventStillOngoing, Is.True);
+    }
+
+    [Test]
+    public void IsEventStillOngoing_EndDateIsTodayWithoutTimeSpecified_StillOngoing()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).Build());
+        var notionEvent = new NotionEventBuilder()
+            .WithName("Ongoing event")
+            .WithStartDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).Build())
+            .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).Build())
+            .Build();
+
+        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        
+        Assert.That(eventStillOngoing, Is.True);
+    }
+
+    [Test]
+    public void IsEventStillOngoing_EndDateIsTodayWithTimeSpecified_TimeBeforeNow_StillOngoing()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(9).WithMinute(59).Build());
+        var notionEvent = new NotionEventBuilder()
+            .WithName("Ongoing event")
+            .WithStartDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).Build())
+            .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(10).Build())
+            .Build();
+
+        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        
+        Assert.That(eventStillOngoing, Is.True);
+    }
+
+    [Test]
+    public void IsEventStillOngoing_EndDateIsTodayWithTimeSpecified_TimeIsNow_StillOngoing()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(10).Build());
+        var notionEvent = new NotionEventBuilder()
+            .WithName("Ongoing event")
+            .WithStartDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).Build())
+            .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(10).Build())
+            .Build();
+
+        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        
+        Assert.That(eventStillOngoing, Is.True);
+    }
+
+    [Test]
+    public void IsEventStillOngoing_EndDateIsTodayWithTimeSpecified_TimeAfterNow_NotOngoing()
+    {
+        _dateTimeProvider.Setup(x => x.Now)
+            .Returns(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(10).Build());
+        var notionEvent = new NotionEventBuilder()
+            .WithName("Ongoing event")
+            .WithStartDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).Build())
+            .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(9).WithMinute(59).Build())
+            .Build();
+
+        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        
+        Assert.That(eventStillOngoing, Is.False);
+    }
+
+    [Test]
     public async Task GetMiniReminders_MixOfEventsWithAndWithoutMiniReminders_ReturnsRemindersToBeTriggeredToday()
     {
         var firstDec2024 = new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(13).WithMinute(30).Build();
