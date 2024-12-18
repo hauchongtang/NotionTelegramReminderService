@@ -23,7 +23,7 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
         }
         else
         {
-            from = dateTimeProvider.Now;
+            from = dateTimeProvider.Now.Date; // Consider events that have no time set -> Assumes whole day.
             to = dateTimeProvider.Now.AddDays(3);
             logger.LogInformation("NotionEventParserService.ParseEvent for (isMorning=false) --> From: {from} To: {to}",
                 from, to);
@@ -39,7 +39,7 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
         }
 
         logger.LogInformation("NotionEventParserService.ParseEvent for (isMorning={isMorning}) --> {eventsCount} events to be sent",
-            events.Count, isMorning);
+            isMorning, events.Count);
         return events;
     }
 
@@ -56,11 +56,35 @@ public class NotionEventParserService(INotionService notionService, IDateTimePro
             events.Add(notionEvent);
         }
 
-        var ongoingEvents = events.Where(e => e is { Start: not null, End: not null } 
-                                              && dateTimeProvider.Now >= e.Start.Value && dateTimeProvider.Now <= e.End.Value);
+        var ongoingEvents = events.Where(e => e is { Start: not null, End: not null }).ToList();
+        foreach (var e in ongoingEvents.ToList())
+        {
+            if (!IsEventStillOngoing(e))
+            {
+                ongoingEvents.Remove(e);
+            }
+        }
+        
         logger.LogInformation("NotionEventParserService.GetOngoingEvents --> {eventCount} ongoing events to be sent",
-            events.Count);
+            ongoingEvents.Count);
         return ongoingEvents.ToList();
+    }
+
+    public bool IsEventStillOngoing(NotionEvent e)
+    {
+        bool stillOngoing;
+        if (e.End is { Hour: 0, Minute: 0, Second: 0 })
+        {
+            stillOngoing = e.Start != null && dateTimeProvider.Now >= e.Start.Value &&
+                           dateTimeProvider.Now.Date <= e.End.Value;
+        }
+        else
+        {
+            stillOngoing = e is { End: not null, Start: not null } && dateTimeProvider.Now >= e.Start.Value &&
+                           dateTimeProvider.Now <= e.End.Value;
+        }
+
+        return stillOngoing;
     }
 
     private static NotionEvent? GetNotionEvent(Page page)
