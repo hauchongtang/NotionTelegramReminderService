@@ -27,8 +27,8 @@ public class UpdateService(ITelegramBotClient telegramBotClient, IWeatherMessage
         cancellationToken.ThrowIfCancellationRequested();
         await (update switch
         {
-            { Message: { } message }                        => OnMessage(message),
-            { EditedMessage: { } message }                  => OnMessage(message),
+            // { Message: { } message }                        => OnMessage(message),
+            // { EditedMessage: { } message }                  => OnMessage(message),
             { CallbackQuery: { } callbackQuery }            => OnCallbackQuery(callbackQuery),
             { InlineQuery: { } inlineQuery }                => OnInlineQuery(inlineQuery),
             { ChosenInlineResult: { } chosenInlineResult }  => OnChosenInlineResult(chosenInlineResult),
