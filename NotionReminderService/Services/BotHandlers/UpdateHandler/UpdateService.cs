@@ -48,20 +48,20 @@ public class UpdateService(ITelegramBotClient telegramBotClient, IWeatherMessage
         if (msg.Text is not { } messageText)
             return;
 
-        Message sentMessage = await (messageText.Split(' ')[0] switch
-        {
-            "/photo" => SendPhoto(msg),
-            "/inline_buttons" => SendInlineKeyboard(msg),
-            "/keyboard" => SendReplyKeyboard(msg),
-            "/remove" => RemoveKeyboard(msg),
-            "/request" => RequestContactAndLocation(msg),
-            "/inline_mode" => StartInlineQuery(msg),
-            "/poll" => SendPoll(msg),
-            "/poll_anonymous" => SendAnonymousPoll(msg),
-            "/throw" => FailingHandler(msg),
-            _ => Usage(msg)
-        });
-        logger.LogInformation("The message was sent with id: {SentMessageId}", sentMessage.Id);
+        // Message sentMessage = await (messageText.Split(' ')[0] switch
+        // {
+        //     "/photo" => SendPhoto(msg),
+        //     "/inline_buttons" => SendInlineKeyboard(msg),
+        //     "/keyboard" => SendReplyKeyboard(msg),
+        //     "/remove" => RemoveKeyboard(msg),
+        //     "/request" => RequestContactAndLocation(msg),
+        //     "/inline_mode" => StartInlineQuery(msg),
+        //     "/poll" => SendPoll(msg),
+        //     "/poll_anonymous" => SendAnonymousPoll(msg),
+        //     "/throw" => FailingHandler(msg),
+        //     _ => Usage(msg)
+        // });
+        // logger.LogInformation("The message was sent with id: {SentMessageId}", sentMessage.Id);
     }
 
     async Task<Message> Usage(Message msg)
