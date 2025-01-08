@@ -51,37 +51,53 @@ public class NotionEventParserServiceTest
         var firstJan2025 = new DateTimeBuilder().WithYear(2025)
             .WithMonth(1).WithDay(1).Build();
 
-        var databaseQuery = new DatabasesQueryParameters
-        {
-            Filter = dateFilter,
-            Sorts =
-            [
-                new Sort
+        var paginatedList = new PaginatedListBuilder()
+        .AddNewPage(
+            new Page
+            {
+                Properties = new Dictionary<string, PropertyValue>
+                { { "Name", new TitlePropertyBuilder().WithTitle("Event 1").Build() } }
+            }
+        )
+        .AddNewPage(
+            new Page
+            {
+                Properties = new Dictionary<string, PropertyValue>
                 {
-                    Direction = Direction.Ascending,
-                    Property = "Date"
+                    { "Name", new TitlePropertyBuilder().WithTitle("Event 2").Build() },
+                    { "Date", new TitlePropertyBuilder().WithTitle("Event 2").Build() }
                 }
-            ]
-        };
-        var paginatedList = new PaginatedList<Page>
-        {
-            Results =
-            [
-                new Page
+            }
+        ).Build();
+        _notionService.Setup(x => x.GetPaginatedList(It.IsAny<DatabasesQueryParameters>())).Returns(paginatedList);
+
+        var events = await _notionEventParserService.UpdateEventsToInProgress(paginatedList);
+
+        Assert.That(events, Has.Count.Equals(1));
+    }
+
+    [Test]
+    public async Task UpdateEventsToInProgress_NotMorningJob_SecondHalfOfDayRange()
+    {
+        var firstJan2025 = new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1);
+        var paginatedList = new PaginatedListBuilder()
+        .AddNewPage(
+            new Page
+            {
+                Properties = new Dictionary<string, PropertyValue>
+                { { "Name", new TitlePropertyBuilder().WithTitle("Event 1").Build() } }
+            }
+        )
+        .AddNewPage(
+            new Page
+            {
+                Properties = new Dictionary<string, PropertyValue>
                 {
-                    Properties = new Dictionary<string, PropertyValue>
-                        { { "Name", new TitlePropertyBuilder().WithTitle("Event 1").Build() } }
-                },
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 2").Build() },
-                        { "Date", new TitlePropertyBuilder().WithTitle("Event 2").Build() }
-                    }
+                    { "Name", new TitlePropertyBuilder().WithTitle("Event 2").Build() },
+                    { "Date", new TitlePropertyBuilder().WithTitle("Event 2").Build() }
                 }
-            ]
-        };
+            }
+        ).Build();
         _notionService.Setup(x => x.GetPaginatedList(It.IsAny<DatabasesQueryParameters>())).Returns(paginatedList);
 
         var events = await _notionEventParserService.UpdateEventsToInProgress(paginatedList);
