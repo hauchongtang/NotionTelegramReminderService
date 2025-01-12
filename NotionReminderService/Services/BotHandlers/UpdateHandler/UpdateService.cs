@@ -61,9 +61,10 @@ public class UpdateService(
     private async Task OnMessage(Message msg)
     {
         logger.LogInformation("Receive message type: {MessageType}", msg.Type);
-        var messageText = msg.Text;
+        var messageText = msg.Text!.ToLower();
 
-        if (messageText!.Contains("event") && (messageText.Contains("at") || messageText.Contains("from")))
+        if (messageText.Contains("hi bot") 
+            && (messageText.Contains("at") || messageText.Contains("event") || messageText.Contains("from")))
         {
             var promptSb = new StringBuilder();
             promptSb.Append($"This is the prompt: {messageText}");
