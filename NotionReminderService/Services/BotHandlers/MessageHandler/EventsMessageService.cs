@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Options;
 using NotionReminderService.Config;
-using NotionReminderService.Models.NotionEvent;
-using NotionReminderService.Services.NotionHandlers.NotionEventParser;
+using NotionReminderService.Services.NotionHandlers.NotionEventRetrival;
 using NotionReminderService.Utils;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -10,15 +9,15 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace NotionReminderService.Services.BotHandlers.MessageHandler;
 
-public class EventsMessageService(INotionEventParserService notionEventParserService, ITelegramBotClient telegramBotClient,
+public class EventsMessageService(INotionEventRetrivalService notionEventRetrivalService, ITelegramBotClient telegramBotClient,
     IDateTimeProvider dateTimeProvider, IOptions<BotConfiguration> botConfig, IOptions<NotionConfiguration> notionConfig, 
     ILogger<IEventsMessageService> logger)
     : IEventsMessageService
 {
     public async Task<Message> SendEventsMessageToChannel(bool isMorning)
     {
-        var events = await notionEventParserService.ParseEvent(isMorning);
-        var ongoingEvents = await notionEventParserService.GetOngoingEvents();
+        var events = await notionEventRetrivalService.GetNotionEvents(isMorning);
+        var ongoingEvents = await notionEventRetrivalService.GetOngoingEvents();
         var greetings = isMorning ? "Morning" : "Evening";
         var messageBody = $"""
                            <b>📅 Plans! Overview</b> | <b>{events.Count} Event(s) upcoming</b> | Today → {dateTimeProvider.Now.AddDays(3):dddd}
@@ -29,17 +28,9 @@ public class EventsMessageService(INotionEventParserService notionEventParserSer
         
         foreach (var notionEvent in events)
         {
-            var eventDate = FormatEventDate(notionEvent);
-            var eventMessageFormat = $"""
-
-                                      <b>🌟 <a href="{notionEvent.Url}">{notionEvent.Name}</a></b>
-                                      <b>📍 {notionEvent.Where}</b>
-                                      <b>👥 {notionEvent.Person}</b>
-                                      <b>▶️ {notionEvent.Status}</b>
-                                      <b>🏷️ {notionEvent.Tags}</b>
-                                      <b>📅 {eventDate}</b>
-
-                                      """;
+            var eventMessageFormat = new NotionEventMessageBuilder()
+                .WithNotionEvent(notionEvent, dateTimeProvider.Now)
+                .Build();
             messageBody += eventMessageFormat;
         }
         
@@ -51,17 +42,9 @@ public class EventsMessageService(INotionEventParserService notionEventParserSer
 
         foreach (var notionEvent in ongoingEvents)
         {
-            var eventDate = FormatEventDate(notionEvent);
-            var eventMessageFormat = $"""
-                                      
-                                      <b>🌟 <a href="{notionEvent.Url}">{notionEvent.Name}</a></b>
-                                      <b>📍 {notionEvent.Where}</b>
-                                      <b>👥 {notionEvent.Person}</b>
-                                      <b>▶️ {notionEvent.Status}</b>
-                                      <b>🏷️ {notionEvent.Tags}</b>
-                                      <b>📅 {eventDate}</b>
-                                      
-                                      """;
+            var eventMessageFormat = new NotionEventMessageBuilder()
+                .WithNotionEvent(notionEvent, dateTimeProvider.Now)
+                .Build();
             messageBody += eventMessageFormat;
         }
 
@@ -82,46 +65,9 @@ public class EventsMessageService(INotionEventParserService notionEventParserSer
         return message;
     }
 
-    public string FormatEventDate(NotionEvent notionEvent)
-    {
-        if (notionEvent.Start is null) return string.Empty;
-        
-        string eventDate;
-        if (EventIsToday(notionEvent))
-        {
-            eventDate = notionEvent.End is null 
-                ? notionEvent.IsWholeDayEvent 
-                    ? "Today" 
-                    : $"Today @ {notionEvent.Start.Value:t}" 
-                : notionEvent.IsWholeDayEvent 
-                    ? $"Today \u2192 {notionEvent.End.Value:F}" 
-                    : $"Today @ {notionEvent.Start.Value:t} \u2192 {notionEvent.End.Value:F}";
-        }
-        else
-        {
-            eventDate = notionEvent.End is null
-                ? notionEvent.IsWholeDayEvent 
-                    ? $"{notionEvent.Start.Value:D}" 
-                    : $"{notionEvent.Start.Value:F}"
-                : notionEvent.IsWholeDayEvent 
-                    ? $"{notionEvent.Start.Value:D} \u2192 {notionEvent.End.Value:D}"
-                    : $"{notionEvent.Start.Value:F} \u2192 {notionEvent.End.Value:F}";
-        }
-
-        return eventDate;
-    }
-
-    private bool EventIsToday(NotionEvent notionEvent)
-    {
-        return notionEvent.Start != null
-               && notionEvent.Start.Value.Year == dateTimeProvider.Now.Year
-               && notionEvent.Start.Value.Month == dateTimeProvider.Now.Month
-               && notionEvent.Start.Value.Day == dateTimeProvider.Now.Day;
-    }
-
     public async Task<Message?> SendMiniReminderMessageToChannel()
     {
-        var events = await notionEventParserService.GetMiniReminders();
+        var events = await notionEventRetrivalService.GetMiniReminders();
         if (events.Count == 0) return null;
         
         var messageBody = $"""
@@ -133,7 +79,7 @@ public class EventsMessageService(INotionEventParserService notionEventParserSer
         {
             if (notionEvent.MiniReminderDesc is null || notionEvent.ReminderPeriod is null) continue;
             
-            var formattedDate = FormatEventDate(notionEvent);
+            var formattedDate = NotionEventDateFormatter.FormatEventDate(notionEvent, dateTimeProvider.Now);
             messageBody += $"""
 
                             For <b>🌟 <a href="{notionEvent.Url}">{notionEvent.Name}</a></b>, 

@@ -21,6 +21,18 @@ public class GoogleAiApi(HttpClient httpClient, IOptions<GoogleAiConfiguration> 
         return await ResponseHandler.HandleResponse<GeminiMessageResponse>(response);
     }
     
+    public async Task<GeminiMessageResponse> GenerateContent(string prompt, GenerationConfig generationConfig)
+    {
+        var data = BuildGeminiRequest(prompt, generationConfig);
+        var content = new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json");
+        var response = await httpClient.PostAsync(
+            new Uri($"{googleAiConfig.Value.Url}/{googleAiConfig.Value.ModelVersion}:generateContent?key={googleAiConfig.Value.ApiKey}"),
+            content);
+        response.EnsureSuccessStatusCode();
+
+        return await ResponseHandler.HandleResponse<GeminiMessageResponse>(response);
+    }
+    
     private static GeminiMessageRequest BuildGeminiRequest(
         string message,
         GenerationConfig? generationConfig = null,

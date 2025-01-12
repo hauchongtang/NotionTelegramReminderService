@@ -1,4 +1,13 @@
+using System.Text;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using Notion.Client;
+using NotionReminderService.Api.GoogleAi;
+using NotionReminderService.Config;
+using NotionReminderService.Models.NotionEvent;
 using NotionReminderService.Services.BotHandlers.WeatherHandler;
+using NotionReminderService.Services.NotionHandlers.NotionService;
+using NotionReminderService.Utils;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
@@ -9,7 +18,14 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace NotionReminderService.Services.BotHandlers.UpdateHandler;
 
-public class UpdateService(ITelegramBotClient telegramBotClient, IWeatherMessageService weatherMessageService, ILogger<IUpdateService> logger)
+public class UpdateService(
+    ITelegramBotClient telegramBotClient,
+    IWeatherMessageService weatherMessageService,
+    INotionService notionService,
+    IGoogleAiApi googleAiApi,
+    IDateTimeProvider dateTimeProvider,
+    IOptions<NotionConfiguration> notionConfig,
+    ILogger<IUpdateService> logger)
     : IUpdateService
 {
     private static readonly InputPollOption[] PollOptions = ["Hello", "World!"];
@@ -27,7 +43,7 @@ public class UpdateService(ITelegramBotClient telegramBotClient, IWeatherMessage
         cancellationToken.ThrowIfCancellationRequested();
         await (update switch
         {
-            // { Message: { } message }                        => OnMessage(message),
+            { Message: { } message }                        => OnMessage(message),
             // { EditedMessage: { } message }                  => OnMessage(message),
             { CallbackQuery: { } callbackQuery }            => OnCallbackQuery(callbackQuery),
             { InlineQuery: { } inlineQuery }                => OnInlineQuery(inlineQuery),
@@ -45,23 +61,66 @@ public class UpdateService(ITelegramBotClient telegramBotClient, IWeatherMessage
     private async Task OnMessage(Message msg)
     {
         logger.LogInformation("Receive message type: {MessageType}", msg.Type);
-        if (msg.Text is not { } messageText)
-            return;
+        var messageText = msg.Text;
 
-        // Message sentMessage = await (messageText.Split(' ')[0] switch
-        // {
-        //     "/photo" => SendPhoto(msg),
-        //     "/inline_buttons" => SendInlineKeyboard(msg),
-        //     "/keyboard" => SendReplyKeyboard(msg),
-        //     "/remove" => RemoveKeyboard(msg),
-        //     "/request" => RequestContactAndLocation(msg),
-        //     "/inline_mode" => StartInlineQuery(msg),
-        //     "/poll" => SendPoll(msg),
-        //     "/poll_anonymous" => SendAnonymousPoll(msg),
-        //     "/throw" => FailingHandler(msg),
-        //     _ => Usage(msg)
-        // });
-        // logger.LogInformation("The message was sent with id: {SentMessageId}", sentMessage.Id);
+        if (messageText!.Contains("event") && (messageText.Contains("at") || messageText.Contains("from")))
+        {
+            var promptSb = new StringBuilder();
+            promptSb.Append($"This is the prompt: {messageText}");
+            promptSb.Append("Given this prompt, generate new event object. If there is no date detected, set it to today and end time to null.");
+            promptSb.Append($"For context, today's date is {dateTimeProvider.Now:yyyy MMMM dd}. My week begins on monday. " +
+                            $"If today is sunday, next monday is the next day\n\n");
+            promptSb.Append("If there is no mini reminder description, set reminder_period and desc to null.");
+            promptSb.Append("Please parse the dates and times to the correct format.");
+            promptSb.Append("If there is no name, then based on the prompt, generate a name with less than 5 words.");
+            promptSb.Append("This is the response schema, please do it such that it is in escaped string format and parsable by dotnet: ");
+            promptSb.Append("Properties: {name: string, where: string, start: datetime?, end: datetime?, reminder_period: string?, mini_reminder_desc: int?}");
+            var messageResponse = await googleAiApi.GenerateContent(promptSb.ToString());
+            var eventObject = messageResponse.Candidates[0].Content.Parts[0].Text.Trim('\n').Trim('`');
+            eventObject = eventObject.Replace("json", "");
+            
+            var notionNewEvent = JsonConvert.DeserializeObject<NotionNewEvent>(eventObject);
+            if (notionNewEvent is null)
+            {
+                // Handle Parsing Error
+                await telegramBotClient.SendMessage(msg.Chat,
+                    "Sorry, there is an error in creating the event. Please do so via the Notion app.");
+                return;
+            }
+            
+            var pageCreateParamsBuilder = PagesCreateParametersBuilder.Create(new DatabaseParentInput
+            {
+                DatabaseId = notionConfig.Value.DatabaseId
+            });
+            var pageCreateParams = pageCreateParamsBuilder
+                .AddProperty("Name",
+                    new TitlePropertyValue
+                        {
+                            Title = [new RichTextText { Text = new Text { Content = notionNewEvent.Name } }]
+                        })
+                .AddProperty("Where",
+                    new RichTextPropertyValue
+                        { RichText = [new RichTextText { Text = new Text { Content = notionNewEvent.Where } }] })
+                .AddProperty("Date",
+                    new DatePropertyValue
+                        { Date = new Date { Start = notionNewEvent.Start, End = notionNewEvent.End, TimeZone = "Asia/Singapore" } })
+                .Build();
+            
+            var page = await notionService.CreateNewEvent(pageCreateParams);
+            var notionEvent = NotionEventParser.GetNotionEvent(page);
+            var formattedEventMsg = new NotionEventMessageBuilder().WithNotionEvent(notionEvent!, dateTimeProvider.Now).Build();
+
+            var replyMarkup = new InlineKeyboardMarkup()
+                .AddNewRow()
+                .AddButton(InlineKeyboardButton.WithUrl("Edit on Notion",
+                    page.Url));
+            await telegramBotClient.SendMessage(msg.Chat,
+                $"""
+                Event created successfully! Here are the details:
+                
+                {formattedEventMsg}
+                """, ParseMode.Html, replyMarkup: replyMarkup);
+        }
     }
 
     async Task<Message> Usage(Message msg)
@@ -155,6 +214,12 @@ public class UpdateService(ITelegramBotClient telegramBotClient, IWeatherMessage
             case "triggerForecast":
             {
                 await weatherMessageService.SendMessage(callbackQuery.Message!.Chat);
+                break;
+            }
+            case "triggerCreateNewEventFlow":
+            {
+                await telegramBotClient.SendMessage(callbackQuery.Message!.Chat,
+                    $"Please describe your new event with the Name, Location, Date, and Time.");
                 break;
             }
             default:

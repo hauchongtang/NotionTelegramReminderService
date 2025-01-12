@@ -1,5 +1,5 @@
 using Notion.Client;
-using NotionReminderService.Services.NotionHandlers.NotionEventParser;
+using NotionReminderService.Services.NotionHandlers.NotionEventRetrival;
 using NotionReminderService.Services.NotionHandlers.NotionService;
 using NotionReminderService.Utils;
 
@@ -24,7 +24,7 @@ public class NotionEventUpdaterService(
         logger.LogInformation("NotionEventUpdaterService.GetEventsEndingToday --> from: {from} to: {to}",
             dateTimeAtStartOfDay, dateTimeAtEndOfDay);
         
-        var dateFilter = NotionEventParserService.GetDateBetweenFilter(propertyName: "Date", from: dateTimeAtStartOfDay,
+        var dateFilter = NotionEventRetrivalService.GetDateBetweenFilter(propertyName: "Date", from: dateTimeAtStartOfDay,
             to: dateTimeAtEndOfDay);
         var databaseQuery = new DatabasesQueryParameters
         {
@@ -89,7 +89,7 @@ public class NotionEventUpdaterService(
 
     private async Task<PaginatedList<Page>> GetEvents(DateTime from, DateTime to)
     {
-        var dateFilter = NotionEventParserService.GetDateBetweenFilter("Date", from: from , to: to);
+        var dateFilter = NotionEventRetrivalService.GetDateBetweenFilter("Date", from: from , to: to);
         var databaseQuery = new DatabasesQueryParameters
         {
             Filter = dateFilter,

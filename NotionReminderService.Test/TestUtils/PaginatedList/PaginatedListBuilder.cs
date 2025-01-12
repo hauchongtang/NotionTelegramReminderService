@@ -1,14 +1,18 @@
+using Notion.Client;
+
+namespace NotionReminderService.Test.TestUtils.PaginatedList;
+
 public class PaginatedListBuilder
 {
-    PagainatedList<Page> paginatedList = new PagainatedList<Page>();
+    private readonly PaginatedList<Notion.Client.Page> _paginatedList = new();
 
-    public PaginatedListBuilder AddNewPage(Page page)
+    public PaginatedListBuilder AddNewPage(Notion.Client.Page page)
     {
-        paginatedList.Results.Add(page);
+        _paginatedList.Results.Add(page);
         return this;
     }
 
-    public PaginatedList<Page> Build() {
-        return paginatedList;
+    public PaginatedList<Notion.Client.Page> Build() {
+        return _paginatedList;
     }
 }
