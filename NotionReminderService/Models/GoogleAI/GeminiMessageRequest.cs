@@ -47,6 +47,8 @@ public class GenerationConfig
     [JsonProperty("topP")] public double TopP { get; set; }
 
     [JsonProperty("topK")] public int TopK { get; set; }
+    [JsonProperty("response_mime_type")] public string? ResponseMimeType { get; set; }
+    [JsonProperty("response_schema")] public object? ResponseSchema { get; set; }
 }
 
 public class SafetySetting

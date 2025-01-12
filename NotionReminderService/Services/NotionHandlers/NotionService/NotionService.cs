@@ -79,4 +79,10 @@ public class NotionService(INotionClient notionClient, IOptions<NotionConfigurat
         statusPropertyValue.Status.Name = "In progress";
         statusPropertyValue.Status.Color = StatusPropertyValue.StatusColor.Blue;
     }
+
+    public async Task<Page> CreateNewEvent(PagesCreateParameters parameters)
+    {
+        var page = await notionClient.Pages.CreateAsync(parameters);
+        return page;
+    }
 }

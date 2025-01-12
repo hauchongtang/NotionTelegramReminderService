@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Notion.Client;
 using NotionReminderService.Models.NotionEvent;
-using NotionReminderService.Services.NotionHandlers.NotionEventParser;
+using NotionReminderService.Services.NotionHandlers.NotionEventRetrival;
 using NotionReminderService.Services.NotionHandlers.NotionService;
 using NotionReminderService.Test.TestUtils;
 using NotionReminderService.Test.TestUtils.Page;
@@ -10,11 +10,11 @@ using NotionReminderService.Utils;
 
 namespace NotionReminderService.Test.Services.NotionHandlers;
 
-public class NotionEventParserServiceTest
+public class NotionEventRetrivalServiceTest
 {
     private Mock<INotionService> _notionService;
-    private Mock<ILogger<INotionEventParserService>> _logger;
-    private NotionEventParserService _notionEventParserService;
+    private Mock<ILogger<INotionEventRetrivalService>> _logger;
+    private NotionEventRetrivalService _notionEventRetrivalService;
     private Mock<IDateTimeProvider> _dateTimeProvider;
 
     [SetUp]
@@ -22,9 +22,9 @@ public class NotionEventParserServiceTest
     {
         _notionService = new Mock<INotionService>();
         _dateTimeProvider = new Mock<IDateTimeProvider>();
-        _logger = new Mock<ILogger<INotionEventParserService>>();
-        _notionEventParserService =
-            new NotionEventParserService(_notionService.Object, _dateTimeProvider.Object, _logger.Object);
+        _logger = new Mock<ILogger<INotionEventRetrivalService>>();
+        _notionEventRetrivalService =
+            new NotionEventRetrivalService(_notionService.Object, _dateTimeProvider.Object, _logger.Object);
     }
 
     [Test]
@@ -61,7 +61,7 @@ public class NotionEventParserServiceTest
         _notionService.Setup(x =>
             x.GetPaginatedList(It.IsAny<DatabasesQueryParameters>())).ReturnsAsync(paginatedList);
 
-        var events = await _notionEventParserService.ParseEvent(isMorning);
+        var events = await _notionEventRetrivalService.GetNotionEvents(isMorning);
         
         Assert.That(events, Has.Count.EqualTo(2));
     }
@@ -95,7 +95,7 @@ public class NotionEventParserServiceTest
         _notionService.Setup(x =>
             x.GetPaginatedList(It.IsAny<DatabasesQueryParameters>())).ReturnsAsync(paginatedList);
 
-        var events = await _notionEventParserService.ParseEvent(isMorning);
+        var events = await _notionEventRetrivalService.GetNotionEvents(isMorning);
         
         Assert.That(!events.Exists(x => x.Date is null));
     }
@@ -129,7 +129,7 @@ public class NotionEventParserServiceTest
         _notionService.Setup(x =>
             x.GetPaginatedList(It.IsAny<DatabasesQueryParameters>())).ReturnsAsync(paginatedList);
 
-        var events = await _notionEventParserService.ParseEvent(isMorning);
+        var events = await _notionEventRetrivalService.GetNotionEvents(isMorning);
         
         Assert.That(!events.Exists(x => x.Name == "Event 2"));
     }
@@ -172,7 +172,7 @@ public class NotionEventParserServiceTest
         _notionService.Setup(x =>
             x.GetPaginatedList(It.IsAny<DatabasesQueryParameters>())).ReturnsAsync(paginatedList);
 
-        var events = await _notionEventParserService.GetOngoingEvents();
+        var events = await _notionEventRetrivalService.GetOngoingEvents();
 
         Assert.That(events, Has.Count.EqualTo(1));
         Assert.That(events.Exists(x => x.Name == "Event 2"));
@@ -216,7 +216,7 @@ public class NotionEventParserServiceTest
         _notionService.Setup(x =>
             x.GetPaginatedList(It.IsAny<DatabasesQueryParameters>())).ReturnsAsync(paginatedList);
 
-        var events = await _notionEventParserService.GetOngoingEvents();
+        var events = await _notionEventRetrivalService.GetOngoingEvents();
 
         Assert.That(events, Has.Count.EqualTo(1));
         Assert.That(events.Exists(x => x.Name == "Event 2"));
@@ -260,7 +260,7 @@ public class NotionEventParserServiceTest
         _notionService.Setup(x =>
             x.GetPaginatedList(It.IsAny<DatabasesQueryParameters>())).ReturnsAsync(paginatedList);
 
-        var events = await _notionEventParserService.GetOngoingEvents();
+        var events = await _notionEventRetrivalService.GetOngoingEvents();
 
         Assert.That(events, Has.Count.EqualTo(1));
         Assert.That(events.Exists(x => x.Name == "Event 2"));
@@ -304,7 +304,7 @@ public class NotionEventParserServiceTest
         _notionService.Setup(x =>
             x.GetPaginatedList(It.IsAny<DatabasesQueryParameters>())).ReturnsAsync(paginatedList);
 
-        var events = await _notionEventParserService.GetOngoingEvents();
+        var events = await _notionEventRetrivalService.GetOngoingEvents();
 
         Assert.That(events, Is.Empty);
     }
@@ -347,7 +347,7 @@ public class NotionEventParserServiceTest
         _notionService.Setup(x =>
             x.GetPaginatedList(It.IsAny<DatabasesQueryParameters>())).ReturnsAsync(paginatedList);
 
-        var events = await _notionEventParserService.GetOngoingEvents();
+        var events = await _notionEventRetrivalService.GetOngoingEvents();
 
         Assert.That(events, Is.Empty);
     }
@@ -363,7 +363,7 @@ public class NotionEventParserServiceTest
             .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(16).Build())
             .Build();
 
-        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        var eventStillOngoing = _notionEventRetrivalService.IsEventStillOngoing(notionEvent);
         
         Assert.That(eventStillOngoing, Is.True);
     }
@@ -379,7 +379,7 @@ public class NotionEventParserServiceTest
             .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).Build())
             .Build();
 
-        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        var eventStillOngoing = _notionEventRetrivalService.IsEventStillOngoing(notionEvent);
         
         Assert.That(eventStillOngoing, Is.True);
     }
@@ -395,7 +395,7 @@ public class NotionEventParserServiceTest
             .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).Build())
             .Build();
 
-        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        var eventStillOngoing = _notionEventRetrivalService.IsEventStillOngoing(notionEvent);
         
         Assert.That(eventStillOngoing, Is.False);
     }
@@ -411,7 +411,7 @@ public class NotionEventParserServiceTest
             .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).Build())
             .Build();
 
-        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        var eventStillOngoing = _notionEventRetrivalService.IsEventStillOngoing(notionEvent);
         
         Assert.That(eventStillOngoing, Is.True);
     }
@@ -427,7 +427,7 @@ public class NotionEventParserServiceTest
             .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).Build())
             .Build();
 
-        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        var eventStillOngoing = _notionEventRetrivalService.IsEventStillOngoing(notionEvent);
         
         Assert.That(eventStillOngoing, Is.True);
     }
@@ -443,7 +443,7 @@ public class NotionEventParserServiceTest
             .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(10).Build())
             .Build();
 
-        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        var eventStillOngoing = _notionEventRetrivalService.IsEventStillOngoing(notionEvent);
         
         Assert.That(eventStillOngoing, Is.True);
     }
@@ -459,7 +459,7 @@ public class NotionEventParserServiceTest
             .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(10).Build())
             .Build();
 
-        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        var eventStillOngoing = _notionEventRetrivalService.IsEventStillOngoing(notionEvent);
         
         Assert.That(eventStillOngoing, Is.True);
     }
@@ -475,7 +475,7 @@ public class NotionEventParserServiceTest
             .WithEndDate(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(12).WithHour(9).WithMinute(59).Build())
             .Build();
 
-        var eventStillOngoing = _notionEventParserService.IsEventStillOngoing(notionEvent);
+        var eventStillOngoing = _notionEventRetrivalService.IsEventStillOngoing(notionEvent);
         
         Assert.That(eventStillOngoing, Is.False);
     }
@@ -553,7 +553,7 @@ public class NotionEventParserServiceTest
         };
         _notionService.Setup(x => x.GetPaginatedList(It.IsAny<DatabasesQueryParameters>())).ReturnsAsync(paginatedList);
 
-        var miniReminders = await _notionEventParserService.GetMiniReminders();
+        var miniReminders = await _notionEventRetrivalService.GetMiniReminders();
         
         Assert.That(miniReminders, Has.Count.EqualTo(1));
         Assert.Multiple(() =>

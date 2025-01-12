@@ -5,7 +5,7 @@ using NotionReminderService.HostedServices.TelegramBot;
 using NotionReminderService.Services.BotHandlers.MessageHandler;
 using NotionReminderService.Services.BotHandlers.UpdateHandler;
 using NotionReminderService.Services.BotHandlers.WeatherHandler;
-using NotionReminderService.Services.NotionHandlers.NotionEventParser;
+using NotionReminderService.Services.NotionHandlers.NotionEventRetrival;
 using NotionReminderService.Services.NotionHandlers.NotionEventUpdater;
 using NotionReminderService.Services.NotionHandlers.NotionService;
 using NotionReminderService.Utils;
@@ -46,7 +46,7 @@ builder.Services.AddScoped<IGoogleAiApi, GoogleAiApi>();
 
 // Services
 builder.Services.AddScoped<IUpdateService, UpdateService>();
-builder.Services.AddScoped<INotionEventParserService, NotionEventParserService>();
+builder.Services.AddScoped<INotionEventRetrivalService, NotionEventRetrivalService>();
 builder.Services.AddScoped<IEventsMessageService, EventsMessageService>();
 builder.Services.AddScoped<INotionService, NotionService>();
 builder.Services.AddScoped<IWeatherMessageService, WeatherMessageService>();
