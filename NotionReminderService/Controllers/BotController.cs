@@ -76,4 +76,12 @@ public class BotController(
         var updatedPages = await notionEventUpdaterService.UpdateEventsToInProgress(isMorning);
         return Ok($"{updatedPages.Count} events updated to 'In progress'");
     }
+
+    [HttpPatch("updateCancelledEventsToTrash")]
+    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
+    public async Task<IActionResult> UpdateCancelledEventsToTrash(CancellationToken cancellationToken)
+    {
+        await notionEventUpdaterService.UpdateEventsToTrash();
+        return Ok();
+    }
 }

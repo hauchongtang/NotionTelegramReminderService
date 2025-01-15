@@ -105,4 +105,29 @@ public class NotionEventUpdaterService(
         var endsTodayEventList = await notionService.GetPaginatedList(databaseQuery);
         return endsTodayEventList;
     }
+
+    public async Task UpdateEventsToTrash()
+    {
+        var eventsToTrash = await GetCancelledEvents()
+        await notionService.DeleteEventsThatAreCancelled(eventsToTrash);
+    }
+
+    private async Task<PaginatedList<Page>> GetCancelledEvents()
+    {
+        var statusFilter = new StatusFilter("Status", "Cancelled");
+        var databaseQuery = new DatabasesQueryParameters
+        {
+            Filter = statusFilter,
+            Sorts =
+            [
+                new Sort
+                {
+                    Direction = Direction.Ascending,
+                    Property = "Date"
+                }
+            ]
+        };
+        var events = await notionService.GetPaginatedList(databaseQuery);
+        return events;
+    }
 }
