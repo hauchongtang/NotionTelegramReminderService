@@ -81,7 +81,7 @@ public class BotController(
     [ServiceFilter(typeof(SecretKeyValidationAttribute))]
     public async Task<IActionResult> UpdateCancelledEventsToTrash(CancellationToken cancellationToken)
     {
-        await notionEventUpdaterService.UpdateEventsToTrash();
-        return Ok();
+        var deletedPages = await notionEventUpdaterService.UpdateEventsToTrash();
+        return Ok($"{deletedPages.Count} cancellation events deleted.");
     }
 }

@@ -86,23 +86,27 @@ public class NotionService(INotionClient notionClient, IOptions<NotionConfigurat
         return page;
     }
 
-    public async Task<List<Page>> DeleteEventsThatAreCancelled(PaginatedList<page> pagesToDelete)
+    public async Task<List<Page>> DeleteEventsThatAreCancelled(PaginatedList<Page> pagesToDelete)
     {
-        foreach (var page in pages.Results)
+        var deletedPages = new List<Page>();
+        foreach (var page in pagesToDelete.Results)
         {
             var eventStatusPropertyValue = GetNotionEventStatus(page);
             if (eventStatusPropertyValue is null) continue;
 
-            await ExecuteDetetePage(page);
+            await ExecuteDeletePage(page);
+            deletedPages.Add(page);
         }
+
+        return deletedPages;
     }
 
-    private async Task ExecuteDetetePage(Page pageToDelete)
+    private async Task ExecuteDeletePage(Page pageToDelete)
     {
         var pagesUpdateParameters = new PagesUpdateParameters
         {
-            InTrash = true
+             Archived = true
         };
-        await notionClient.Pages.UpdateAsync(pagesToDelete.PageId, pagesUpdateParameters);
+        await notionClient.Pages.UpdateAsync(pageToDelete.Id, pagesUpdateParameters);
     }
 }
