@@ -106,10 +106,10 @@ public class NotionEventUpdaterService(
         return endsTodayEventList;
     }
 
-    public async Task UpdateEventsToTrash()
+    public async Task<List<Page>> UpdateEventsToTrash()
     {
-        var eventsToTrash = await GetCancelledEvents()
-        await notionService.DeleteEventsThatAreCancelled(eventsToTrash);
+        var eventsToTrash = await GetCancelledEvents();
+        return await notionService.DeleteEventsThatAreCancelled(eventsToTrash);
     }
 
     private async Task<PaginatedList<Page>> GetCancelledEvents()
