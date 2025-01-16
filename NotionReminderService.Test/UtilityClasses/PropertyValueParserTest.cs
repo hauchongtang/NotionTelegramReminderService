@@ -1,10 +1,18 @@
+using Notion.Client;
+using NotionReminderService.Test.TestUtils;
+using NotionReminderService.Test.TestUtils.Page;
+using NotionReminderService.Utils;
+
+namespace NotionReminderService.Test.UtilityClasses;
+
 public class PropertyValueParserTest
 {
     private Page _pageWithProperties;
 
-    [Setup]
+    [SetUp]
     public void Setup()
     {
+        var firstDec2024 = new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).Build();
         _pageWithProperties = new Page
         {
             Properties = new Dictionary<string, PropertyValue>
@@ -21,7 +29,7 @@ public class PropertyValueParserTest
     {
         var titlePropertyValue = PropertyValueParser<TitlePropertyValue>.GetValueFromPage(_pageWithProperties, "Name");
 
-        Assert.IsInstanceOf<TitlePropertyValue(titlePropertyValue);
+        Assert.That(titlePropertyValue, Is.InstanceOf<TitlePropertyValue>());
     }
 
     [Test]
@@ -29,7 +37,7 @@ public class PropertyValueParserTest
     {
         var datePropertyValue = PropertyValueParser<DatePropertyValue>.GetValueFromPage(_pageWithProperties, "Date");
 
-        Assert.IsInstanceOf<DatePropertyValue>(datePropertyValue);
+        Assert.That(datePropertyValue, Is.InstanceOf<DatePropertyValue>());
     }
 
     [Test]
@@ -37,6 +45,6 @@ public class PropertyValueParserTest
     {
         var richTextPropertyBuilder = PropertyValueParser<RichTextPropertyValue>.GetValueFromPage(_pageWithProperties, "Location");
 
-        Assert.IsInstanceOf<RichTextPropertyValue>(richTextPropertyValue);
+        Assert.That(richTextPropertyBuilder, Is.InstanceOf<RichTextPropertyValue>());
     }
 }

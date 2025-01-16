@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Notion.Client;
+using Notion.Client.Extensions;
 using NotionReminderService.Api.GoogleAi;
 using NotionReminderService.Config;
 using NotionReminderService.Models.NotionEvent;
@@ -15,6 +16,8 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
 using Telegram.Bot.Types.ReplyMarkups;
+using Color = Notion.Client.Color;
+using User = Notion.Client.User;
 
 namespace NotionReminderService.Services.BotHandlers.UpdateHandler;
 
@@ -66,16 +69,30 @@ public class UpdateService(
         if (messageText.Contains("hi bot") 
             && (messageText.Contains("at") || messageText.Contains("event") || messageText.Contains("from")))
         {
-            var newTitleFilter = new TitleFilter(equal: "GetAllTags");
+            var newTitleFilter = new TitleFilter("Name", "GetAllTags");
             var databaseQuery = new DatabasesQueryParameters
             {
                 Filter = newTitleFilter,
             };
-            var pageWithAllTagsAndPersons = await notionService.GetPaginatedList(databaseQuery).Results[0];
-            var persons = new Getpersons
-            var tags = new GetMultiSelectPropertyValue(pageWithAllTagsAndPersons, "Tags");
-
+            var paginatedList = await notionService.GetPaginatedList(databaseQuery);
+            var pageWithAllTagsAndPersons = paginatedList.Results[0];
+            var persons = 
+                PropertyValueParser<PeoplePropertyValue>.GetValueFromPage(pageWithAllTagsAndPersons, "Person");
+            var p1 = PropertyValueParser<RichTextPropertyValue>
+                .GetValueFromPage(pageWithAllTagsAndPersons, "PersonOneMap")?
+                .RichText[0].PlainText;
+            var p1Map = p1?.Split('-');
+            var p2 = PropertyValueParser<RichTextPropertyValue>
+                .GetValueFromPage(pageWithAllTagsAndPersons, "PersonTwoMap")?
+                .RichText[0].PlainText;
+            var p2Map = p2?.Split('-');
             var userId = msg.From!.Id; // Sender Id
+            long.TryParse(p1Map?[0], out var p1Id);
+            long.TryParse(p2Map?[0], out var p2Id);
+            var sender = persons?.People.Find(x => 
+                (p1Id == userId && x.Name == p1Map?[1])
+                || (p2Id == userId && x.Name == p2Map?[1]));
+            
             var promptSb = new StringBuilder();
             promptSb.Append($"This is the prompt: {messageText}");
             promptSb.Append("Given this prompt, generate new event object. If there is no date detected, set it to today and end time to null.");
@@ -84,8 +101,13 @@ public class UpdateService(
             promptSb.Append("If there is no mini reminder description, set reminder_period and desc to null.");
             promptSb.Append("Please parse the dates and times to the correct format.");
             promptSb.Append("If there is no name, then based on the prompt, generate a name with less than 5 words.");
+            promptSb.Append($"Persons are {p1} and {p2}");
+            promptSb.Append($"Sender is {sender?.Name}. Please classify the persons based on the prompt.");
+            promptSb.Append("Detect based on the prompt, only classify to these two persons (one of whom is the sender). " +
+                            "There can be 1 or 2 persons. Main identifiers are going with (who). If it is vague, just set the sender only." +
+                            "Separate the persons with a `~`. Otherwise set to null.");
             promptSb.Append("This is the response schema, please do it such that it is in escaped string format and parsable by dotnet: ");
-            promptSb.Append("Properties: {name: string, where: string, start: datetime?, end: datetime?, reminder_period: string?, mini_reminder_desc: int?}");
+            promptSb.Append("Properties: {name: string, where: string, person: string?, tag: string?, start: datetime?, end: datetime?, reminder_period: string?, mini_reminder_desc: int?}");
             var messageResponse = await googleAiApi.GenerateContent(promptSb.ToString());
             
             var eventObject = messageResponse.Candidates[0].Content.Parts[0].Text.Trim('\n').Trim('`');
@@ -97,6 +119,15 @@ public class UpdateService(
                 await telegramBotClient.SendMessage(msg.Chat,
                     "Sorry, there is an error in creating the event. Please do so via the Notion app.");
                 return;
+            }
+            
+            var personList = notionNewEvent.Person?.Split('~');
+            var personsToAdd = new List<User?>();
+            foreach (var person in personList!)
+            {
+                var pMap = person.Split('-');
+                personsToAdd.Add(persons?.People.Find(x =>
+                    p1Id == userId && x.Name == pMap[1]));
             }
             
             var pageCreateParamsBuilder = PagesCreateParametersBuilder.Create(new DatabaseParentInput
@@ -115,16 +146,23 @@ public class UpdateService(
                 .AddProperty("Date",
                     new DatePropertyValue
                         { Date = new Date { Start = notionNewEvent.Start, End = notionNewEvent.End, TimeZone = "Asia/Singapore" } })
+                .AddProperty("Person", new PeoplePropertyValue{ People = personsToAdd })
                 .Build();
-            
             var page = await notionService.CreateNewEvent(pageCreateParams);
             var notionEvent = NotionEventParser.GetNotionEvent(page);
             var formattedEventMsg = new NotionEventMessageBuilder().WithNotionEvent(notionEvent!, dateTimeProvider.Now).Build();
-
+            
             var replyMarkup = new InlineKeyboardMarkup()
                 .AddNewRow()
                 .AddButton(InlineKeyboardButton.WithUrl("Edit on Notion",
                     page.Url));
+            var tags = 
+                PropertyValueParser<MultiSelectPropertyValue>.GetValueFromPage(pageWithAllTagsAndPersons, "Tags");
+            tags?.MultiSelect.ForEach(tag =>
+            {
+                replyMarkup.AddNewRow()
+                    .AddButton(InlineKeyboardButton.WithCallbackData(text: $"Add tag: {tag.Name}", callbackData: $"{page.Id}~{tag.Name}"));
+            });
             await telegramBotClient.SendMessage(msg.Chat,
                 $"""
                 Event created successfully! Here are the details:
@@ -235,8 +273,29 @@ public class UpdateService(
             }
             default:
             {
-                await telegramBotClient.SendMessage(callbackQuery.Message!.Chat,
-                    $"Feature is unavailable. It might be on maintenance or is disabled.");
+                if (!callbackQuery.Data!.Contains('~'))
+                {
+                    await telegramBotClient.SendMessage(callbackQuery.Message!.Chat,
+                        $"Feature is unavailable. It might be on maintenance or is disabled.");
+                    break;
+                }
+                
+                var data = callbackQuery.Data.Split('~');
+                var pageId = data[0];
+                var tagId = data[1];
+                var updatedPage = await notionService.UpdatePageTag(pageId, tagId);
+                var replyMarkup = new InlineKeyboardMarkup()
+                    .AddNewRow()
+                    .AddButton(InlineKeyboardButton.WithUrl("Edit on Notion",
+                        updatedPage.Url));
+                var updatedEvent = NotionEventParser.GetNotionEvent(updatedPage);
+                var formattedEventMsg = new NotionEventMessageBuilder().WithNotionEvent(updatedEvent!, dateTimeProvider.Now).Build();
+                await telegramBotClient.SendMessage(callbackQuery.Message?.Chat!,
+                    $"""
+                     Event updated successfully! Here are the details:
+
+                     {formattedEventMsg}
+                     """, ParseMode.Html, replyMarkup: replyMarkup);
                 break;
             }
         }
