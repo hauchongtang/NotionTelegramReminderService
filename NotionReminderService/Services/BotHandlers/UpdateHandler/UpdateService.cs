@@ -66,6 +66,16 @@ public class UpdateService(
         if (messageText.Contains("hi bot") 
             && (messageText.Contains("at") || messageText.Contains("event") || messageText.Contains("from")))
         {
+            var newTitleFilter = new TitleFilter(equal: "GetAllTags");
+            var databaseQuery = new DatabasesQueryParameters
+            {
+                Filter = newTitleFilter,
+            };
+            var pageWithAllTagsAndPersons = await notionService.GetPaginatedList(databaseQuery).Results[0];
+            var persons = new Getpersons
+            var tags = new GetMultiSelectPropertyValue(pageWithAllTagsAndPersons, "Tags");
+
+            var userId = msg.From!.Id; // Sender Id
             var promptSb = new StringBuilder();
             promptSb.Append($"This is the prompt: {messageText}");
             promptSb.Append("Given this prompt, generate new event object. If there is no date detected, set it to today and end time to null.");
@@ -77,9 +87,9 @@ public class UpdateService(
             promptSb.Append("This is the response schema, please do it such that it is in escaped string format and parsable by dotnet: ");
             promptSb.Append("Properties: {name: string, where: string, start: datetime?, end: datetime?, reminder_period: string?, mini_reminder_desc: int?}");
             var messageResponse = await googleAiApi.GenerateContent(promptSb.ToString());
+            
             var eventObject = messageResponse.Candidates[0].Content.Parts[0].Text.Trim('\n').Trim('`');
             eventObject = eventObject.Replace("json", "");
-            
             var notionNewEvent = JsonConvert.DeserializeObject<NotionNewEvent>(eventObject);
             if (notionNewEvent is null)
             {
