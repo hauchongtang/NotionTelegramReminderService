@@ -45,21 +45,15 @@ public abstract class NotionEventParser
 
     private static Date? GetNotionEventDate(Page page)
     {
-        if (!page.Properties.ContainsKey("Date")) return null;
-        
-        page.Properties.TryGetValue("Date", out var dateProperty);
-        
-        if (dateProperty is not { Type: PropertyValueType.Date }) return null;
-        
-        return ((DatePropertyValue) dateProperty).Date;
+        var dateProperty = PropertyValueParser<DatePropertyValue>.GetValueFromPage(page, "Date");
+        return dateProperty!.Date;
     }
 
     private static string? GetNotionEventLocation(Page page)
     {
         string? location = null;
-        if (!page.Properties.ContainsKey("Where")) return location;
-        page.Properties.TryGetValue("Where", out var where);
-        var locRichText = ((RichTextPropertyValue) where!).RichText;
+        var where = PropertyValueParser<RichTextPropertyValue>.GetValueFromPage(page, "Where");
+        var locRichText = where!.RichText;
         location = locRichText.Aggregate("", (s, rt) => s + rt.PlainText);
 
         return location;
@@ -68,9 +62,8 @@ public abstract class NotionEventParser
     private static string? GetNotionEventName(Page page)
     {
         string? notionEventName = null;
-        if (!page.Properties.ContainsKey("Name")) return notionEventName;
-        page.Properties.TryGetValue("Name", out var title);
-        var titleRichText = ((TitlePropertyValue) title!).Title;
+        var title = PropertyValueParser<TitlePropertyValue>.GetValueFromPage(page, "Name");
+        var titleRichText = title!.Title;
         notionEventName = titleRichText.Aggregate("", (s, rt) => s + rt.PlainText);
 
         return notionEventName;
@@ -78,37 +71,30 @@ public abstract class NotionEventParser
     
     private static string? GetNotionEventPerson(Page page)
     {
-        if (!page.Properties.ContainsKey("Person")) return null;
-        
-        page.Properties.TryGetValue("Person", out var personPropValue);
-        var personList = ((PeoplePropertyValue) personPropValue!).People.Select(x => x.Name).ToList();
+        var personPropValue = PropertyValueParser<PeoplePropertyValue>.GetValueFromPage(page, "Person");
+        var personList = personPropValue!.People.Select(x => x.Name).ToList();
         return string.Join(", ", personList);
     }
 
     private static string? GetNotionEventStatus(Page page)
     {
-        if (!page.Properties.ContainsKey("Status")) return null;
-
-        page.Properties.TryGetValue("Status", out var statusPropValue);
-        var status = ((StatusPropertyValue)statusPropValue!).Status;
+        var statusPropValue = PropertyValueParser<StatusPropertyValue>.GetValueFromPage(page, "Status");
+        var status = statusPropValue!.Status;
         return status.Name;
     }
 
+    // TODO: Refactor all GetProperty methods. Remove hardcoding of keys.
     private static string? GetNotionEventTag(Page page)
     {
-        if (!page.Properties.ContainsKey("Tags")) return null;
-
-        page.Properties.TryGetValue("Tags", out var multiSelectPropValue);
-        var tags = ((MultiSelectPropertyValue)multiSelectPropValue!).MultiSelect.Select(x => x.Name);
+        var multiSelectPropValue = PropertyValueParser<MultiSelectPropertyValue>.GetValueFromPage(page, "Tags");
+        var tags = multiSelectPropValue.MultiSelect!.Select(x => x.Name);
         return string.Join(" | ", tags);
     }
 
     private static ReminderPeriodOptions? GetNotionMiniReminderTrigger(Page page)
     {
-        if (!page.Properties.ContainsKey("Trigger Mini Reminder")) return null;
-
-        page.Properties.TryGetValue("Trigger Mini Reminder", out var selectPropValue);
-        var triggerProperty = ((SelectPropertyValue)selectPropValue!).Select?.Name;
+        var selectPropValue = PropertyValueParser<SelectPropertyValue>.GetValueFromPage(page, "Trigger Mini Reminder");
+        var triggerProperty = selectPropValue!.Select?.Name;
         return triggerProperty switch
         {
             "On the day itself" => ReminderPeriodOptions.OnTheDayItself,
@@ -121,11 +107,9 @@ public abstract class NotionEventParser
 
     private static string? GetNotionMiniReminderDescription(Page page)
     {
-        if (!page.Properties.ContainsKey("Mini Reminder Description")) return null;
-
-        page.Properties.TryGetValue("Mini Reminder Description", out var richTextPropValue);
+        var richTextPropValue = PropertyValueParser<RichTextPropertyValue>.GetValueFromPage(page, "Mini Reminder Description");
         var description =
-            ((RichTextPropertyValue)richTextPropValue!).RichText.Aggregate("", (s, rt) => s + rt.PlainText);
+            richTextPropValue!.RichText.Aggregate("", (s, rt) => s + rt.PlainText);
         return description;
     }
 }

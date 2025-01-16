@@ -16,18 +16,15 @@ internal class TelegramBotSetup(
         
         var webhookUrl = botConfig.Value.BotWebhookUrl.OriginalString;
 
-        // Set up the webhook if it is configured.
-        if (!string.IsNullOrEmpty(webhookUrl))
-        {
-            logger.LogInformation("Setting up the webhook");
-            await client.SetWebhook(
-                    webhookUrl,
-                    secretToken: botConfig.Value.SecretToken,
-                    cancellationToken: cancellationToken
-                )
-                .ConfigureAwait(false);
-            logger.LogInformation("Webhook set up successfully at {Url}", webhookUrl);
-        }
+        // Replaces the previous webhook on every restart
+        logger.LogInformation("Setting up the webhook");
+        await client.SetWebhook(
+            webhookUrl,
+            secretToken: botConfig.Value.SecretToken,
+            cancellationToken: cancellationToken
+        )
+        .ConfigureAwait(false);
+        logger.LogInformation("Webhook set up successfully at {Url}", webhookUrl);
 
         logger.LogInformation("Setup completed successfully");
     }

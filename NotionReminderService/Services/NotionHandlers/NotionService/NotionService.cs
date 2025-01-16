@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using Notion.Client;
 using NotionReminderService.Config;
+using NotionReminderService.Utils;
 
 namespace NotionReminderService.Services.NotionHandlers.NotionService;
 
@@ -108,5 +109,31 @@ public class NotionService(INotionClient notionClient, IOptions<NotionConfigurat
              Archived = true
         };
         await notionClient.Pages.UpdateAsync(pageToDelete.Id, pagesUpdateParameters);
+    }
+    
+    public async Task<Page> UpdatePageTag(string pageId, string tagId)
+    {
+        var newTitleFilter = new TitleFilter("Name", "GetAllTags");
+        var databaseQuery = new DatabasesQueryParameters
+        {
+            Filter = newTitleFilter,
+        };
+        var paginatedList = await GetPaginatedList(databaseQuery);
+        var page = paginatedList.Results.FirstOrDefault();
+        var tags = 
+            PropertyValueParser<MultiSelectPropertyValue>.GetValueFromPage(page!, "Tags");
+        var tagToAdd = tags?.MultiSelect.First(x => x.Name == tagId);
+        var pageUpdateParameters = new PagesUpdateParameters
+        {
+            Properties = new Dictionary<string, PropertyValue>
+            {
+                { "Tags", new MultiSelectPropertyValue
+                {
+                    MultiSelect = [tagToAdd]
+                } }
+            }
+        };
+        var updatedPage = await notionClient.Pages.UpdateAsync(pageId, pageUpdateParameters);
+        return updatedPage;
     }
 }
