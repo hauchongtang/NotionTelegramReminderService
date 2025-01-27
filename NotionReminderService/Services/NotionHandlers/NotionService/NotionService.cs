@@ -31,11 +31,7 @@ public class NotionService(INotionClient notionClient, IOptions<NotionConfigurat
     
     private static StatusPropertyValue? GetNotionEventStatus(Page page)
     {
-        if (!page.Properties.ContainsKey("Status")) return null;
-
-        page.Properties.TryGetValue("Status", out var statusPropValue);
-        var status = ((StatusPropertyValue)statusPropValue!);
-        return status;
+        return PropertyValueParser<StatusPropertyValue>.GetValueFromPage(page, "Status");
     }
 
     private static void SetStatusToDone(StatusPropertyValue statusPropertyValue)
