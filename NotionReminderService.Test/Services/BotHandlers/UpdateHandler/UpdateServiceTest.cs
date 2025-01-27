@@ -13,7 +13,7 @@ public class UpdateServiceTest
 		_notionConfig = new Mock<IOptions<NotionConfig>>();
 		_logger = new Mock<ILogger<IUpdateService>>();
 		
-		_updateService = new UpdateService(_botClient.Object, _weatherMsgService.Object, _notionService.Object
+		_updateService = new UpdateService(_botClient.Object, _weatherMsgService.Object, _notionService.Object,
 			_googleAiApi.Object, _dtProvider.Object, _notionConfig.Object, _logger.Object);
 	}
 	
@@ -23,7 +23,7 @@ public class UpdateServiceTest
 		var messageReceived = new Message 
 		{
 			Text = "hi tom! I have an event today!";
-		}
+		};
 		
 		await _updateService.OnMessage(messageReceived);
 		
@@ -37,7 +37,7 @@ public class UpdateServiceTest
 		var messageReceived = new Message 
 		{
 			Text = "hi bot, I have an event today!";
-		}
+		};
 		
 		await _updateService.OnMessage(messageReceived);
 		
@@ -51,7 +51,7 @@ public class UpdateServiceTest
 		var messageReceived = new Message
 		{
 			Text = "hi bot, please create an event at xxxx tomorrow at yyyy";
-		}
+		};
 		
 		await _updateService.OnMessage(messageReceived);
 		
@@ -66,12 +66,12 @@ public class UpdateServiceTest
 		var messageReceived = new Message
 		{
 			Text = "hi bot, please create an event located at xxxx tomorrow at noon.";
-		}
+		};
 		
 		var user1 = new User
 		{
 			Name = "user1";
-		}
+		};
 		var peopleProperty = new PeoplePropertyBuilder().WithUser(user1).Build();
 		var paginatedList = new PaginatedListBuilder()
 			.AddNewPage();
