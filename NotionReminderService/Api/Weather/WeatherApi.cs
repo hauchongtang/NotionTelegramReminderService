@@ -5,7 +5,7 @@ using NotionReminderService.Utils;
 
 namespace NotionReminderService.Api.Weather;
 
-public class WeatherApi(HttpClient httpClient, IDateTimeProvider dateTimeProvider, 
+public class WeatherApi(IHttpClientFactory httpClientFactory, IDateTimeProvider dateTimeProvider,
     IOptions<WeatherConfiguration> weatherConfig) : IWeatherApi
 {
     public async Task<List<WeatherItem>?> GetRealTimeWeather()
@@ -16,6 +16,7 @@ public class WeatherApi(HttpClient httpClient, IDateTimeProvider dateTimeProvide
     
     private async Task<RealTimeWeatherResponse?> GetCurrentWeatherData()
     {
+        using HttpClient httpClient = httpClientFactory.CreateClient();
         var dateNow = $"{dateTimeProvider.Now:yyyy-MM-dd}T{dateTimeProvider.Now:HH:mm:ss}";
         var response =
             await httpClient.GetAsync(

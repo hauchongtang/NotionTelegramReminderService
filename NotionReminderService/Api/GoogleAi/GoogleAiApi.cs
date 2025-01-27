@@ -7,10 +7,12 @@ using NotionReminderService.Utils;
 
 namespace NotionReminderService.Api.GoogleAi;
 
-public class GoogleAiApi(HttpClient httpClient, IOptions<GoogleAiConfiguration> googleAiConfig) : IGoogleAiApi
+public class GoogleAiApi(IHttpClientFactory httpClientFactory, IOptions<GoogleAiConfiguration> googleAiConfig) : IGoogleAiApi
 {
     public async Task<GeminiMessageResponse> GenerateContent(string prompt)
     {
+        using HttpClient httpClient = httpClientFactory.CreateClient();
+
         var data = BuildGeminiRequest(prompt);
         var content = new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json");
         var response = await httpClient.PostAsync(
@@ -23,6 +25,8 @@ public class GoogleAiApi(HttpClient httpClient, IOptions<GoogleAiConfiguration> 
     
     public async Task<GeminiMessageResponse> GenerateContent(string prompt, GenerationConfig generationConfig)
     {
+        using HttpClient httpClient = httpClientFactory.CreateClient();
+        
         var data = BuildGeminiRequest(prompt, generationConfig);
         var content = new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json");
         var response = await httpClient.PostAsync(

@@ -66,8 +66,8 @@ public class UpdateService(
         logger.LogInformation("Receive message type: {MessageType}", msg.Type);
         var messageText = msg.Text!.ToLower();
 
-        if (messageText.Contains("hi bot") 
-            && (messageText.Contains("at") || messageText.Contains("event") || messageText.Contains("from")))
+		// && (messageText.Contains("at") || messageText.Contains("event") || messageText.Contains("from"))
+        if (messageText.Contains("hi") && messageText.Contains("bot"))
         {
             var newTitleFilter = new TitleFilter("Name", "GetAllTags");
             var databaseQuery = new DatabasesQueryParameters
@@ -75,6 +75,14 @@ public class UpdateService(
                 Filter = newTitleFilter,
             };
             var paginatedList = await notionService.GetPaginatedList(databaseQuery);
+			if (paginatedList is null)
+			{
+				// Send to user that the notion connecter is down.
+				await _botClient.SendMessage(msg.Chat, 
+					"The Notion Connector seems to be down right now! Please try again later.");
+				return;
+			}
+			
             var pageWithAllTagsAndPersons = paginatedList.Results[0];
             var persons = 
                 PropertyValueParser<PeoplePropertyValue>.GetValueFromPage(pageWithAllTagsAndPersons, "Person");
@@ -93,22 +101,46 @@ public class UpdateService(
                 (p1Id == userId && x.Name == p1Map?[1])
                 || (p2Id == userId && x.Name == p2Map?[1]));
             
-            var promptSb = new StringBuilder();
-            promptSb.Append($"This is the prompt: {messageText}");
-            promptSb.Append("Given this prompt, generate new event object. If there is no date detected, set it to today and end time to null.");
-            promptSb.Append($"For context, today's date is {dateTimeProvider.Now:yyyy MMMM dd}. My week begins on monday. " +
-                            $"If today is sunday, next monday is the next day\n\n");
-            promptSb.Append("If there is no mini reminder description, set reminder_period and desc to null.");
-            promptSb.Append("Please parse the dates and times to the correct format.");
-            promptSb.Append("If there is no name, then based on the prompt, generate a name with less than 5 words.");
-            promptSb.Append($"Persons are {p1} and {p2}");
-            promptSb.Append($"Sender is {sender?.Name}. Please classify the persons based on the prompt.");
-            promptSb.Append("Detect based on the prompt, only classify to these two persons (one of whom is the sender). " +
-                            "There can be 1 or 2 persons. Main identifiers are going with (who). If it is vague, just set the sender only." +
-                            "Separate the persons with a `~`. Otherwise set to null.");
-            promptSb.Append("This is the response schema, please do it such that it is in escaped string format and parsable by dotnet: ");
-            promptSb.Append("Properties: {name: string, where: string, person: string?, tag: string?, start: datetime?, end: datetime?, reminder_period: string?, mini_reminder_desc: int?}");
-            var messageResponse = await googleAiApi.GenerateContent(promptSb.ToString());
+            // var promptSb = new StringBuilder();
+            // promptSb.Append($"This is the prompt: {messageText}");
+            // promptSb.Append("Given this prompt, generate new event object. If there is no date detected, set it to today and end time to null.");
+            // promptSb.Append($"For context, today's date is {dateTimeProvider.Now:yyyy MMMM dd}. My week begins on monday. " +
+                            // $"If today is sunday, next monday is the next day\n\n");
+            // promptSb.Append("If there is no mini reminder description, set reminder_period and desc to null.");
+            // promptSb.Append("Please parse the dates and times to the correct format.");
+            // promptSb.Append("If there is no name, then based on the prompt, generate a name with less than 5 words.");
+            // promptSb.Append($"Persons are {p1} and {p2}");
+            // promptSb.Append($"Sender is {sender?.Name}. Please classify the persons based on the prompt.");
+            // promptSb.Append("Detect based on the prompt, only classify to these two persons (one of whom is the sender). " +
+                            // "There can be 1 or 2 persons. Main identifiers are going with (who). If it is vague, just set the sender only." +
+                            // "Separate the persons with a `~`. Otherwise set to null.");
+            // promptSb.Append("This is the response schema, please do it such that it is in escaped string format and parsable by dotnet: ");
+            // promptSb.Append("Properties: {name: string, where: string, person: string?, tag: string?, start: datetime?, end: datetime?, reminder_period: string?, mini_reminder_desc: int?}");
+            var prompt = $"""
+				Instructions: Given this prompt, generate a new event json object.
+				If you don't know the date, set the date to today and the time to null (For context, today is {dateTimeProvider.Now:yyyy MMMM dd}. My Week begins on Monday).
+				Contd to the above: Datetime to be parsed to the ISO8601 format.
+				If you don't detect any mini reminder description, then set reminder_period and desc to null.
+				If there is no name, then based on the prompt, generate a name with less than 8 words.
+				
+				This is my prompt: {messageText}.
+				Persons are {p1} and {p2}. Sender is {sender?.Name}. You will need to classify the persons based on the prompt.
+				Detect based on the prompt, only classify to these two persons (one of whom is the sender).
+				There can be only 1 or 2 persons. If it is vague, just set the sender only. Separate the persons with a `~`. Otherwise set to null.
+				
+				This is the response schema that you must strictly follow. Please do it such that it is in escaped string format and parsable by dotnet:
+				Properties: {
+					name: string,
+					where: string,
+					person: string?,
+					tag: string?,
+					start: datetime?,
+					end: datetime?,
+					reminder_period: string?,
+					mini_reminder_desc: int?
+				}
+			""";
+			var messageResponse = await googleAiApi.GenerateContent(prompt);
             
             var eventObject = messageResponse.Candidates[0].Content.Parts[0].Text.Trim('\n').Trim('`');
             eventObject = eventObject.Replace("json", "");
@@ -117,7 +149,7 @@ public class UpdateService(
             {
                 // Handle Parsing Error
                 await telegramBotClient.SendMessage(msg.Chat,
-                    "Sorry, there is an error in creating the event. Please do so via the Notion app.");
+                    "Sorry, there is an error in creating the event. Please try again or do so via the Notion app.");
                 return;
             }
             
