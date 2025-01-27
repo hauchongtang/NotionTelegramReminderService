@@ -1,0 +1,33 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and run test on NotionNotificationService
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  build and test:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.x'
+      - name: Install dependencies
+        run: dotnet restore
+        
+      - name: Build with dotnet
+        run: dotnet build --configuration Release
+
+      - name: dotnet publish
+        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+
+      - name: dotnet test
+        run: dotnet test
