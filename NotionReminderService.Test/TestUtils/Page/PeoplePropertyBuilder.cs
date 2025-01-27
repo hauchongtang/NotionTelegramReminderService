@@ -5,7 +5,7 @@ public class PeoplePropertyBuilder
 	public PeoplePropertyValue Build()
 	{
 		return new PeoplePropertyValue {
-			People = _personsToAdd;
+			People = _personsToAdd
 		};
 	}
 	

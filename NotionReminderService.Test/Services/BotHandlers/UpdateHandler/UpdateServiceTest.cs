@@ -22,7 +22,7 @@ public class UpdateServiceTest
 	{
 		var messageReceived = new Message 
 		{
-			Text = "hi tom! I have an event today!";
+			Text = "hi tom! I have an event today!"
 		};
 		
 		await _updateService.OnMessage(messageReceived);
@@ -36,7 +36,7 @@ public class UpdateServiceTest
 	{
 		var messageReceived = new Message 
 		{
-			Text = "hi bot, I have an event today!";
+			Text = "hi bot, I have an event today!"
 		};
 		
 		await _updateService.OnMessage(messageReceived);
@@ -50,7 +50,7 @@ public class UpdateServiceTest
 	{
 		var messageReceived = new Message
 		{
-			Text = "hi bot, please create an event at xxxx tomorrow at yyyy";
+			Text = "hi bot, please create an event at xxxx tomorrow at yyyy"
 		};
 		
 		await _updateService.OnMessage(messageReceived);
@@ -65,12 +65,12 @@ public class UpdateServiceTest
 	{
 		var messageReceived = new Message
 		{
-			Text = "hi bot, please create an event located at xxxx tomorrow at noon.";
+			Text = "hi bot, please create an event located at xxxx tomorrow at noon."
 		};
 		
 		var user1 = new User
 		{
-			Name = "user1";
+			Name = "user1"
 		};
 		var peopleProperty = new PeoplePropertyBuilder().WithUser(user1).Build();
 		var paginatedList = new PaginatedListBuilder()
