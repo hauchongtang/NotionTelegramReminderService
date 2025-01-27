@@ -65,6 +65,21 @@ public class UpdateService(
     {
         logger.LogInformation("Receive message type: {MessageType}", msg.Type);
         var messageText = msg.Text!.ToLower();
+        if (messageText.Contains("/settings")) 
+        {
+            var messageTokens = messageText.Split("/settings");
+            if (messageTokens.Length <= 1) {
+                await _telegramBotClient.SendMessage(msg.Chat, "Access denied. Please try again.");
+                return;
+            }
+
+            // Validation Success -> Sends back inline message to admin
+            var inlineOptionsForSettings = new InlineKeyboardMarkup()
+                .AddNewRow()
+                .AddButton(InlineKeyboardButton.WithCallbackData(text: "Set Telegram Webhook URL", callbackData: $"setTgWebhook"));
+            await _telegramBotClient.SendMessage(msg.Chat, "Hi Admin! Here is the settings menu below:", replyMarkup: inlineOptionsForSettings);
+            return;
+        }
 
 		// && (messageText.Contains("at") || messageText.Contains("event") || messageText.Contains("from"))
         if (messageText.Contains("hi") && messageText.Contains("bot"))
@@ -78,7 +93,7 @@ public class UpdateService(
 			if (paginatedList is null)
 			{
 				// Send to user that the notion connecter is down.
-				await _botClient.SendMessage(msg.Chat, 
+				await _telegramBotClient.SendMessage(msg.Chat, 
 					"The Notion Connector seems to be down right now! Please try again later.");
 				return;
 			}
@@ -301,6 +316,11 @@ public class UpdateService(
             {
                 await telegramBotClient.SendMessage(callbackQuery.Message!.Chat,
                     $"Please describe your new event with the Name, Location, Date, and Time.");
+                break;
+            }
+            case "setTgWebhook":
+            {
+                // Redirect to custom webpage forms ?
                 break;
             }
             default:
