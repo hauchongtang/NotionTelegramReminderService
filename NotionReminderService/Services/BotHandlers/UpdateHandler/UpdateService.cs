@@ -144,17 +144,8 @@ public class UpdateService(
 				There can be only 1 or 2 persons. If it is vague, just set the sender only. Separate the persons with a `~`. Otherwise set to null.
 				
 				This is the response schema that you must strictly follow. Please do it such that it is in escaped string format and parsable by dotnet:
-				Properties: {
-					name: string,
-					where: string,
-					person: string?,
-					tag: string?,
-					start: datetime?,
-					end: datetime?,
-					reminder_period: string?,
-					mini_reminder_desc: int?
-				}
 			""";
+            prompt += "Properties: {name: string, where: string, person: string?, tag: string?, start: datetime?, end: datetime?, reminder_period: string?, mini_reminder_desc: int?}";
 			var messageResponse = await googleAiApi.GenerateContent(prompt);
             
             var eventObject = messageResponse.Candidates[0].Content.Parts[0].Text.Trim('\n').Trim('`');
