@@ -119,7 +119,7 @@ public class UpdateService(
             var prompt = $"""
 				Instructions: Given this prompt, generate a new event json object.
 				If you don't know the date, set the date to today and the time to null (For context, today is {dateTimeProvider.Now:yyyy MMMM dd}. My Week begins on Monday).
-				Contd to the above: Datetime to be parsed to the ISO8601 format.
+				Contd to the above: Datetime to be parsed to the ISO8601 format. However, if there is no time detected, then just send in YYYY-MM-DD format.
 				If you don't detect any mini reminder description, then set reminder_period and desc to null.
 				If there is no name, then based on the prompt, generate a name with less than 8 words.
 				
