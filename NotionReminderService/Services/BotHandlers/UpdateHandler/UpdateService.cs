@@ -69,7 +69,7 @@ public class UpdateService(
         {
             var messageTokens = messageText.Split("/settings");
             if (messageTokens.Length <= 1) {
-                await _telegramBotClient.SendMessage(msg.Chat, "Access denied. Please try again.");
+                await telegramBotClient.SendMessage(msg.Chat, "Access denied. Please try again.");
                 return;
             }
 
@@ -77,7 +77,7 @@ public class UpdateService(
             var inlineOptionsForSettings = new InlineKeyboardMarkup()
                 .AddNewRow()
                 .AddButton(InlineKeyboardButton.WithCallbackData(text: "Set Telegram Webhook URL", callbackData: $"setTgWebhook"));
-            await _telegramBotClient.SendMessage(msg.Chat, "Hi Admin! Here is the settings menu below:", replyMarkup: inlineOptionsForSettings);
+            await telegramBotClient.SendMessage(msg.Chat, "Hi Admin! Here is the settings menu below:", replyMarkup: inlineOptionsForSettings);
             return;
         }
 
@@ -93,7 +93,7 @@ public class UpdateService(
 			if (paginatedList is null)
 			{
 				// Send to user that the notion connecter is down.
-				await _telegramBotClient.SendMessage(msg.Chat, 
+				await telegramBotClient.SendMessage(msg.Chat, 
 					"The Notion Connector seems to be down right now! Please try again later.");
 				return;
 			}
