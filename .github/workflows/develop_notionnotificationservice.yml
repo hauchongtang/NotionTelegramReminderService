@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build and test:
+  build-and-test:
     runs-on: windows-latest
 
     steps:
@@ -22,7 +22,7 @@ jobs:
           dotnet-version: '9.x'
       - name: Install dependencies
         run: dotnet restore
-        
+
       - name: Build with dotnet
         run: dotnet build --configuration Release
 
