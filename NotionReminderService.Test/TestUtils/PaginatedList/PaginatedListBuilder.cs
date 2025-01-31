@@ -4,7 +4,10 @@ namespace NotionReminderService.Test.TestUtils.PaginatedList;
 
 public class PaginatedListBuilder
 {
-    private readonly PaginatedList<Notion.Client.Page> _paginatedList = new();
+    private readonly PaginatedList<Notion.Client.Page> _paginatedList = new()
+    {
+        Results = []
+    };
 
     public PaginatedListBuilder AddNewPage(Notion.Client.Page page)
     {

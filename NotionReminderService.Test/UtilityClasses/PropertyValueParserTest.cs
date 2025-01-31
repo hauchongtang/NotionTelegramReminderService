@@ -44,7 +44,7 @@ public class PropertyValueParserTest
     [Test]
     public void ParseRichTextPropertyValue()
     {
-        var richTextPropertValue = PropertyValueParser<RichTextPropertyValue>.GetValueFromPage(_pageWithProperties, "Location");
+        var richTextPropertyValue = PropertyValueParser<RichTextPropertyValue>.GetValueFromPage(_pageWithProperties, "Location");
 
         Assert.That(richTextPropertyValue, Is.InstanceOf<RichTextPropertyValue>());
     }

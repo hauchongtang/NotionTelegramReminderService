@@ -80,8 +80,7 @@ public class UpdateService(
             await telegramBotClient.SendMessage(msg.Chat, "Hi Admin! Here is the settings menu below:", replyMarkup: inlineOptionsForSettings);
             return;
         }
-
-		// && (messageText.Contains("at") || messageText.Contains("event") || messageText.Contains("from"))
+        
         if (messageText.Contains("hi") && messageText.Contains("bot"))
         {
             var newTitleFilter = new TitleFilter("Name", "GetAllTags");
@@ -89,24 +88,37 @@ public class UpdateService(
             {
                 Filter = newTitleFilter,
             };
-            var paginatedList = await notionService.GetPaginatedList(databaseQuery);
-			if (paginatedList is null)
-			{
-				// Send to user that the notion connecter is down.
-				await telegramBotClient.SendMessage(msg.Chat, 
-					"The Notion Connector seems to be down right now! Please try again later.");
-				return;
-			}
-			
-            var pageWithAllTagsAndPersons = paginatedList.Results[0];
+
+            Page? tagsInfoPage;
+            try
+            {
+                tagsInfoPage = await notionService.GetPageFromDatabase(databaseQuery);
+            }
+            catch (Exception e)
+            {
+                logger.LogError($"UpdateService.OnMessage NotionClient error -> {e}");
+                // Inform user that the notion connector is down.
+                await telegramBotClient.SendMessage(msg.Chat, 
+                    "The Notion Connector seems to be down right now! Please try again later.");
+                return;
+            }
+
+            if (tagsInfoPage is null)
+            {
+                logger.LogError($"UpdateService.OnMessage -> No tag information can be found.");
+                await telegramBotClient.SendMessage(msg.Chat, 
+                    "We are unable to generate your event. Please try again later.");
+                return;
+            }
+            
             var persons = 
-                PropertyValueParser<PeoplePropertyValue>.GetValueFromPage(pageWithAllTagsAndPersons, "Person");
+                PropertyValueParser<PeoplePropertyValue>.GetValueFromPage(tagsInfoPage, "Person");
             var p1 = PropertyValueParser<RichTextPropertyValue>
-                .GetValueFromPage(pageWithAllTagsAndPersons, "PersonOneMap")?
+                .GetValueFromPage(tagsInfoPage, "PersonOneMap")?
                 .RichText[0].PlainText;
             var p1Map = p1?.Split('-');
             var p2 = PropertyValueParser<RichTextPropertyValue>
-                .GetValueFromPage(pageWithAllTagsAndPersons, "PersonTwoMap")?
+                .GetValueFromPage(tagsInfoPage, "PersonTwoMap")?
                 .RichText[0].PlainText;
             var p2Map = p2?.Split('-');
             var userId = msg.From!.Id; // Sender Id
@@ -195,7 +207,7 @@ public class UpdateService(
                 .AddButton(InlineKeyboardButton.WithUrl("Edit on Notion",
                     page.Url));
             var tags = 
-                PropertyValueParser<MultiSelectPropertyValue>.GetValueFromPage(pageWithAllTagsAndPersons, "Tags");
+                PropertyValueParser<MultiSelectPropertyValue>.GetValueFromPage(tagsInfoPage, "Tags");
             tags?.MultiSelect.ForEach(tag =>
             {
                 replyMarkup.AddNewRow()

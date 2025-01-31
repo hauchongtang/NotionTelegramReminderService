@@ -12,6 +12,12 @@ public class NotionService(INotionClient notionClient, IOptions<NotionConfigurat
         return await notionClient.Databases.QueryAsync(notionConfig.Value.DatabaseId, parameters);
     }
 
+    public async Task<Page?> GetPageFromDatabase(DatabasesQueryParameters parameters)
+    {
+        var pages = await GetPaginatedList(parameters);
+        return pages.Results.Count == 0 ? null : pages.Results[0];
+    }
+
     public async Task<List<Page>> UpdateEventsToCompleted(PaginatedList<Page> pages)
     {
         var updatedPages = new List<Page>();

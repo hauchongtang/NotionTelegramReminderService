@@ -7,6 +7,4 @@ public class NotionNewEvent
     public string? Person { get; set; }
     public DateTime? Start { get; set; }
     public DateTime? End { get; set; }
-    public string? MiniReminderDesc { get; set; }
-    public ReminderPeriodOptions? ReminderPeriod { get; set; }
 }

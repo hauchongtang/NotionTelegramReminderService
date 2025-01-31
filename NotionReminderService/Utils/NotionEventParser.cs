@@ -87,8 +87,8 @@ public abstract class NotionEventParser
     private static string? GetNotionEventTag(Page page)
     {
         var multiSelectPropValue = PropertyValueParser<MultiSelectPropertyValue>.GetValueFromPage(page, "Tags");
-        var tags = multiSelectPropValue.MultiSelect!.Select(x => x.Name);
-        return string.Join(" | ", tags);
+        var tags = multiSelectPropValue?.MultiSelect!.Select(x => x.Name);
+        return tags is null ? string.Empty : string.Join(" | ", tags);
     }
 
     private static ReminderPeriodOptions? GetNotionMiniReminderTrigger(Page page)
