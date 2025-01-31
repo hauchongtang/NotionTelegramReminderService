@@ -47,16 +47,11 @@ public class UpdateService(
         await (update switch
         {
             { Message: { } message }                        => OnMessage(message),
-            // { EditedMessage: { } message }                  => OnMessage(message),
             { CallbackQuery: { } callbackQuery }            => OnCallbackQuery(callbackQuery),
             { InlineQuery: { } inlineQuery }                => OnInlineQuery(inlineQuery),
             { ChosenInlineResult: { } chosenInlineResult }  => OnChosenInlineResult(chosenInlineResult),
             { Poll: { } poll }                              => OnPoll(poll),
             { PollAnswer: { } pollAnswer }                  => OnPollAnswer(pollAnswer),
-            // ChannelPost:
-            // EditedChannelPost:
-            // ShippingQuery:
-            // PreCheckoutQuery:
             _                                               => UnknownUpdateHandlerAsync(update)
         });
     }
@@ -65,161 +60,171 @@ public class UpdateService(
     {
         logger.LogInformation("Receive message type: {MessageType}", msg.Type);
         var messageText = msg.Text!.ToLower();
-        if (messageText.Contains("/settings")) 
+        if (messageText.Contains("/settings"))
         {
-            var messageTokens = messageText.Split("/settings");
-            if (messageTokens.Length <= 1) {
-                await telegramBotClient.SendMessage(msg.Chat, "Access denied. Please try again.");
-                return;
-            }
+            await HandleSettings(msg, messageText);
+        }
+        else if (messageText.Contains("hi") && messageText.Contains("bot"))
+        {
+            await HandleAddNewEvent(msg, messageText);
+        }
+    }
 
-            // Validation Success -> Sends back inline message to admin
-            var inlineOptionsForSettings = new InlineKeyboardMarkup()
-                .AddNewRow()
-                .AddButton(InlineKeyboardButton.WithCallbackData(text: "Set Telegram Webhook URL", callbackData: $"setTgWebhook"));
-            await telegramBotClient.SendMessage(msg.Chat, "Hi Admin! Here is the settings menu below:", replyMarkup: inlineOptionsForSettings);
+    private async Task HandleSettings(Message msg, string messageText)
+    {
+        var messageTokens = messageText.Split("/settings");
+        if (messageTokens.Length <= 1)
+        {
+            await telegramBotClient.SendMessage(msg.Chat, "Access denied. Please try again.");
             return;
         }
-        
-        if (messageText.Contains("hi") && messageText.Contains("bot"))
+
+        // Validation Success -> Sends back inline message to admin
+        var inlineOptionsForSettings = new InlineKeyboardMarkup()
+            .AddNewRow()
+            .AddButton(InlineKeyboardButton.WithCallbackData(text: "Set Telegram Webhook URL", callbackData: $"setTgWebhook"));
+        await telegramBotClient.SendMessage(msg.Chat, "Hi Admin! Here is the settings menu below:", replyMarkup: inlineOptionsForSettings);
+        return;
+    }
+
+    private async Task HandleAddNewEvent(Message msg, string messageText)
+    {
+        var newTitleFilter = new TitleFilter("Name", "GetAllTags");
+        var databaseQuery = new DatabasesQueryParameters
         {
-            var newTitleFilter = new TitleFilter("Name", "GetAllTags");
-            var databaseQuery = new DatabasesQueryParameters
-            {
-                Filter = newTitleFilter,
-            };
+            Filter = newTitleFilter,
+        };
 
-            Page? tagsInfoPage;
-            try
-            {
-                tagsInfoPage = await notionService.GetPageFromDatabase(databaseQuery);
-            }
-            catch (Exception e)
-            {
-                logger.LogError($"UpdateService.OnMessage NotionClient error -> {e}");
-                // Inform user that the notion connector is down.
-                await telegramBotClient.SendMessage(msg.Chat, 
-                    "The Notion Connector seems to be down right now! Please try again later.");
-                return;
-            }
-
-            if (tagsInfoPage is null)
-            {
-                logger.LogError($"UpdateService.OnMessage -> No tag information can be found.");
-                await telegramBotClient.SendMessage(msg.Chat, 
-                    "We are unable to generate your event. Please try again later.");
-                return;
-            }
-            
-            var persons = 
-                PropertyValueParser<PeoplePropertyValue>.GetValueFromPage(tagsInfoPage, "Person");
-            var p1 = PropertyValueParser<RichTextPropertyValue>
-                .GetValueFromPage(tagsInfoPage, "PersonOneMap")?
-                .RichText[0].PlainText;
-            var p1Map = p1?.Split('-');
-            var p2 = PropertyValueParser<RichTextPropertyValue>
-                .GetValueFromPage(tagsInfoPage, "PersonTwoMap")?
-                .RichText[0].PlainText;
-            var p2Map = p2?.Split('-');
-            var userId = msg.From!.Id; // Sender Id
-            long.TryParse(p1Map?[0], out var p1Id);
-            long.TryParse(p2Map?[0], out var p2Id);
-            var sender = persons?.People.Find(x => 
-                (p1Id == userId && x.Name == p1Map?[1])
-                || (p2Id == userId && x.Name == p2Map?[1]));
-            
-            // var promptSb = new StringBuilder();
-            // promptSb.Append($"This is the prompt: {messageText}");
-            // promptSb.Append("Given this prompt, generate new event object. If there is no date detected, set it to today and end time to null.");
-            // promptSb.Append($"For context, today's date is {dateTimeProvider.Now:yyyy MMMM dd}. My week begins on monday. " +
-                            // $"If today is sunday, next monday is the next day\n\n");
-            // promptSb.Append("If there is no mini reminder description, set reminder_period and desc to null.");
-            // promptSb.Append("Please parse the dates and times to the correct format.");
-            // promptSb.Append("If there is no name, then based on the prompt, generate a name with less than 5 words.");
-            // promptSb.Append($"Persons are {p1} and {p2}");
-            // promptSb.Append($"Sender is {sender?.Name}. Please classify the persons based on the prompt.");
-            // promptSb.Append("Detect based on the prompt, only classify to these two persons (one of whom is the sender). " +
-                            // "There can be 1 or 2 persons. Main identifiers are going with (who). If it is vague, just set the sender only." +
-                            // "Separate the persons with a `~`. Otherwise set to null.");
-            // promptSb.Append("This is the response schema, please do it such that it is in escaped string format and parsable by dotnet: ");
-            // promptSb.Append("Properties: {name: string, where: string, person: string?, tag: string?, start: datetime?, end: datetime?, reminder_period: string?, mini_reminder_desc: int?}");
-            var prompt = $"""
-				Instructions: Given this prompt, generate a new event json object.
-				If you don't know the date, set the date to today and the time to null (For context, today is {dateTimeProvider.Now:yyyy MMMM dd}. My Week begins on Monday).
-				Contd to the above: Datetime to be parsed to the ISO8601 format. However, if there is no time detected, then just send in YYYY-MM-DD format.
-				If you don't detect any mini reminder description, then set reminder_period and desc to null.
-				If there is no name, then based on the prompt, generate a name with less than 8 words.
-				
-				This is my prompt: {messageText}.
-				Persons are {p1} and {p2}. Sender is {sender?.Name}. You will need to classify the persons based on the prompt.
-				Detect based on the prompt, only classify to these two persons (one of whom is the sender).
-				There can be only 1 or 2 persons. If it is vague, just set the sender only. Separate the persons with a `~`. Otherwise set to null.
-				
-				This is the response schema that you must strictly follow. Please do it such that it is in escaped string format and parsable by dotnet:
-			""";
-            prompt += "Properties: {name: string, where: string, person: string?, tag: string?, start: datetime?, end: datetime?, reminder_period: string?, mini_reminder_desc: int?}";
-			var messageResponse = await googleAiApi.GenerateContent(prompt);
-            
-            var eventObject = messageResponse.Candidates[0].Content.Parts[0].Text.Trim('\n').Trim('`');
-            eventObject = eventObject.Replace("json", "");
-            var notionNewEvent = JsonConvert.DeserializeObject<NotionNewEvent>(eventObject);
-            if (notionNewEvent is null)
-            {
-                // Handle Parsing Error
-                await telegramBotClient.SendMessage(msg.Chat,
-                    "Sorry, there is an error in creating the event. Please try again or do so via the Notion app.");
-                return;
-            }
-            
-            var personList = notionNewEvent.Person?.Split('~');
-            var personsToAdd = new List<User?>();
-            foreach (var person in personList!)
-            {
-                var pMap = person.Split('-');
-                personsToAdd.Add(persons?.People.Find(x =>
-                    p1Id == userId && x.Name == pMap[1]));
-            }
-            
-            var pageCreateParamsBuilder = PagesCreateParametersBuilder.Create(new DatabaseParentInput
-            {
-                DatabaseId = notionConfig.Value.DatabaseId
-            });
-            var pageCreateParams = pageCreateParamsBuilder
-                .AddProperty("Name",
-                    new TitlePropertyValue
-                        {
-                            Title = [new RichTextText { Text = new Text { Content = notionNewEvent.Name } }]
-                        })
-                .AddProperty("Where",
-                    new RichTextPropertyValue
-                        { RichText = [new RichTextText { Text = new Text { Content = notionNewEvent.Where } }] })
-                .AddProperty("Date",
-                    new DatePropertyValue
-                        { Date = new Date { Start = notionNewEvent.Start, End = notionNewEvent.End, TimeZone = "Asia/Singapore" } })
-                .AddProperty("Person", new PeoplePropertyValue{ People = personsToAdd })
-                .Build();
-            var page = await notionService.CreateNewEvent(pageCreateParams);
-            var notionEvent = NotionEventParser.GetNotionEvent(page);
-            var formattedEventMsg = new NotionEventMessageBuilder().WithNotionEvent(notionEvent!, dateTimeProvider.Now).Build();
-            
-            var replyMarkup = new InlineKeyboardMarkup()
-                .AddNewRow()
-                .AddButton(InlineKeyboardButton.WithUrl("Edit on Notion",
-                    page.Url));
-            var tags = 
-                PropertyValueParser<MultiSelectPropertyValue>.GetValueFromPage(tagsInfoPage, "Tags");
-            tags?.MultiSelect.ForEach(tag =>
-            {
-                replyMarkup.AddNewRow()
-                    .AddButton(InlineKeyboardButton.WithCallbackData(text: $"Add tag: {tag.Name}", callbackData: $"{page.Id}~{tag.Name}"));
-            });
-            await telegramBotClient.SendMessage(msg.Chat,
-                $"""
-                Event created successfully! Here are the details:
-                
-                {formattedEventMsg}
-                """, ParseMode.Html, replyMarkup: replyMarkup);
+        Page? tagsInfoPage;
+        try
+        {
+            tagsInfoPage = await notionService.GetPageFromDatabase(databaseQuery);
         }
+        catch (Exception e)
+        {
+            logger.LogError($"UpdateService.OnMessage NotionClient error -> {e}");
+            // Inform user that the notion connector is down.
+            await telegramBotClient.SendMessage(msg.Chat, 
+                "The Notion Connector seems to be down right now! Please try again later.");
+            return;
+        }
+
+        if (tagsInfoPage is null)
+        {
+            logger.LogError($"UpdateService.OnMessage -> No tag information can be found.");
+            await telegramBotClient.SendMessage(msg.Chat, 
+                "We are unable to generate your event. Please try again later.");
+            return;
+        }
+            
+        var persons = 
+            PropertyValueParser<PeoplePropertyValue>.GetValueFromPage(tagsInfoPage, "Person");
+        var p1 = PropertyValueParser<RichTextPropertyValue>
+            .GetValueFromPage(tagsInfoPage, "PersonOneMap")?
+            .RichText[0].PlainText;
+        var p1Map = p1?.Split('-');
+        var p2 = PropertyValueParser<RichTextPropertyValue>
+            .GetValueFromPage(tagsInfoPage, "PersonTwoMap")?
+            .RichText[0].PlainText;
+        var p2Map = p2?.Split('-');
+        var userId = msg.From!.Id; // Sender Id
+        long.TryParse(p1Map?[0], out var p1Id);
+        long.TryParse(p2Map?[0], out var p2Id);
+        var sender = persons?.People.Find(x => 
+            (p1Id == userId && x.Name == p1Map?[1])
+            || (p2Id == userId && x.Name == p2Map?[1]));
+            
+        // var promptSb = new StringBuilder();
+        // promptSb.Append($"This is the prompt: {messageText}");
+        // promptSb.Append("Given this prompt, generate new event object. If there is no date detected, set it to today and end time to null.");
+        // promptSb.Append($"For context, today's date is {dateTimeProvider.Now:yyyy MMMM dd}. My week begins on monday. " +
+        // $"If today is sunday, next monday is the next day\n\n");
+        // promptSb.Append("If there is no mini reminder description, set reminder_period and desc to null.");
+        // promptSb.Append("Please parse the dates and times to the correct format.");
+        // promptSb.Append("If there is no name, then based on the prompt, generate a name with less than 5 words.");
+        // promptSb.Append($"Persons are {p1} and {p2}");
+        // promptSb.Append($"Sender is {sender?.Name}. Please classify the persons based on the prompt.");
+        // promptSb.Append("Detect based on the prompt, only classify to these two persons (one of whom is the sender). " +
+        // "There can be 1 or 2 persons. Main identifiers are going with (who). If it is vague, just set the sender only." +
+        // "Separate the persons with a `~`. Otherwise set to null.");
+        // promptSb.Append("This is the response schema, please do it such that it is in escaped string format and parsable by dotnet: ");
+        // promptSb.Append("Properties: {name: string, where: string, person: string?, tag: string?, start: datetime?, end: datetime?, reminder_period: string?, mini_reminder_desc: int?}");
+        var prompt = $"""
+                      	Instructions: Given this prompt, generate a new event json object.
+                      	If you don't know the date, set the date to today and the time to null (For context, today is {dateTimeProvider.Now:yyyy MMMM dd}. My Week begins on Monday).
+                      	Contd to the above: Datetime to be parsed to the ISO8601 format. However, if there is no time detected, then just send in YYYY-MM-DD format.
+                      	If you don't detect any mini reminder description, then set reminder_period and desc to null.
+                      	If there is no name, then based on the prompt, generate a name with less than 8 words.
+                      	
+                      	This is my prompt: {messageText}.
+                      	Persons are {p1} and {p2}. Sender is {sender?.Name}. You will need to classify the persons based on the prompt.
+                      	Detect based on the prompt, only classify to these two persons (one of whom is the sender).
+                      	There can be only 1 or 2 persons. If it is vague, just set the sender only. Separate the persons with a `~`. Otherwise set to null.
+                      	
+                      	This is the response schema that you must strictly follow. Please do it such that it is in escaped string format and parsable by dotnet:
+                      """;
+        prompt += "Properties: {name: string, where: string, person: string?, tag: string?, start: datetime?, end: datetime?, reminder_period: string?, mini_reminder_desc: int?}";
+        var messageResponse = await googleAiApi.GenerateContent(prompt);
+            
+        var eventObject = messageResponse.Candidates[0].Content.Parts[0].Text.Trim('\n').Trim('`');
+        eventObject = eventObject.Replace("json", "");
+        var notionNewEvent = JsonConvert.DeserializeObject<NotionNewEvent>(eventObject);
+        if (notionNewEvent is null)
+        {
+            // Handle Parsing Error
+            await telegramBotClient.SendMessage(msg.Chat,
+                "Sorry, there is an error in creating the event. Please try again or do so via the Notion app.");
+            return;
+        }
+            
+        var personList = notionNewEvent.Person?.Split('~');
+        var personsToAdd = new List<User?>();
+        foreach (var person in personList!)
+        {
+            var pMap = person.Split('-');
+            personsToAdd.Add(persons?.People.Find(x =>
+                p1Id == userId && x.Name == pMap[1]));
+        }
+            
+        var pageCreateParamsBuilder = PagesCreateParametersBuilder.Create(new DatabaseParentInput
+        {
+            DatabaseId = notionConfig.Value.DatabaseId
+        });
+        var pageCreateParams = pageCreateParamsBuilder
+            .AddProperty("Name",
+                new TitlePropertyValue
+                {
+                    Title = [new RichTextText { Text = new Text { Content = notionNewEvent.Name } }]
+                })
+            .AddProperty("Where",
+                new RichTextPropertyValue
+                    { RichText = [new RichTextText { Text = new Text { Content = notionNewEvent.Where } }] })
+            .AddProperty("Date",
+                new DatePropertyValue
+                    { Date = new Date { Start = notionNewEvent.Start, End = notionNewEvent.End, TimeZone = "Asia/Singapore" } })
+            .AddProperty("Person", new PeoplePropertyValue{ People = personsToAdd })
+            .Build();
+        var page = await notionService.CreateNewEvent(pageCreateParams);
+        var notionEvent = NotionEventParser.GetNotionEvent(page);
+        var formattedEventMsg = new NotionEventMessageBuilder().WithNotionEvent(notionEvent!, dateTimeProvider.Now).Build();
+            
+        var replyMarkup = new InlineKeyboardMarkup()
+            .AddNewRow()
+            .AddButton(InlineKeyboardButton.WithUrl("Edit on Notion",
+                page.Url));
+        var tags = 
+            PropertyValueParser<MultiSelectPropertyValue>.GetValueFromPage(tagsInfoPage, "Tags");
+        tags?.MultiSelect.ForEach(tag =>
+        {
+            replyMarkup.AddNewRow()
+                .AddButton(InlineKeyboardButton.WithCallbackData(text: $"Add tag: {tag.Name}", callbackData: $"{page.Id}~{tag.Name}"));
+        });
+        await telegramBotClient.SendMessage(msg.Chat,
+            $"""
+             Event created successfully! Here are the details:
+
+             {formattedEventMsg}
+             """, ParseMode.Html, replyMarkup: replyMarkup);
     }
 
     async Task<Message> Usage(Message msg)
