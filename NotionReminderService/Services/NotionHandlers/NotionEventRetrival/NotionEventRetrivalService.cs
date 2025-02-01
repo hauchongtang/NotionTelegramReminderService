@@ -33,9 +33,17 @@ public class NotionEventRetrivalService(INotionService notionService, IDateTimeP
         var events = new List<NotionEvent>();
         foreach (var page in pages.Results)
         {
-            var notionEvent = NotionEventParser.GetNotionEvent(page);
-            if (notionEvent is null) continue;
-            events.Add(notionEvent);
+            try
+            {
+                var notionEvent = NotionEventParser.GetNotionEvent(page);
+                if (notionEvent is null) continue;
+                events.Add(notionEvent);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                continue;
+            }
         }
 
         logger.LogInformation("NotionEventParserService.ParseEvent for (isMorning={isMorning}) --> {eventsCount} events to be sent",

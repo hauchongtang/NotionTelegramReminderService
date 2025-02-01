@@ -38,24 +38,18 @@ public class NotionEventRetrivalServiceTest
         {
             Results =
             [
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 1").Build() },
-                        { "Date", new DatePropertyBuilder().WithStartDt(firstDec2024).Build() },
-                        { "Location", new RichTextPropertyBuilder().WithText("Singapore").Build() }
-                    }
-                },
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 2").Build() },
-                        { "Date", new DatePropertyBuilder().WithStartDt(firstDec2024).Build() },
-                        { "Location", new RichTextPropertyBuilder().WithText("Hong Kong").Build() }
-                    }
-                }
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 1").Build())
+                    .WithProperty("Date", new DatePropertyBuilder().WithStartDt(firstDec2024).Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Singapore").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User123"}).Build())
+                    .Build(),
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 2").Build())
+                    .WithProperty("Date", new DatePropertyBuilder().WithStartDt(firstDec2024).Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Hong Kong").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User1234"}).Build())
+                    .Build()
             ]
         };
         _notionService.Setup(x =>
@@ -77,19 +71,17 @@ public class NotionEventRetrivalServiceTest
         {
             Results =
             [
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                        { { "Name", new TitlePropertyBuilder().WithTitle("Event 1").Build() } }
-                },
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 2").Build() },
-                        { "Date", new DatePropertyBuilder().WithStartDt(firstDec2024).Build() }
-                    }
-                }
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 1").Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Singapore").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User123"}).Build())
+                    .Build(),
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 2").Build())
+                    .WithProperty("Date", new DatePropertyBuilder().WithStartDt(firstDec2024).Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Hong Kong").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User1234"}).Build())
+                    .Build()
             ]
         };
         _notionService.Setup(x =>
@@ -111,19 +103,18 @@ public class NotionEventRetrivalServiceTest
         {
             Results =
             [
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                        { { "Name", new TitlePropertyBuilder().WithTitle("Event 1").Build() } }
-                },
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 2").Build() },
-                        { "Date", new TitlePropertyBuilder().WithTitle("Event 2").Build() }
-                    }
-                }
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 1").Build())
+                    .WithProperty("Date", new TitlePropertyBuilder().WithTitle("Event 1").Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Singapore").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User123"}).Build())
+                    .Build(),
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 2").Build())
+                    .WithProperty("Date", new DatePropertyBuilder().WithStartDt(firstDec2024).Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Hong Kong").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User1234"}).Build())
+                    .Build()
             ]
         };
         _notionService.Setup(x =>
@@ -131,7 +122,7 @@ public class NotionEventRetrivalServiceTest
 
         var events = await _notionEventRetrivalService.GetNotionEvents(isMorning);
         
-        Assert.That(!events.Exists(x => x.Name == "Event 2"));
+        Assert.That(!events.Exists(x => x.Name == "Event 1"));
     }
 
     [Test]
@@ -144,29 +135,23 @@ public class NotionEventRetrivalServiceTest
         {
             Results =
             [
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 1").Build() },
-                        { "Date", new DatePropertyBuilder()
-                            .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(12).Build())
-                            .Build()
-                        }
-                    }
-                },
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 2").Build() },
-                        { "Date", new DatePropertyBuilder()
-                            .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(12).Build())
-                            .WithEndDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).Build())
-                            .Build()
-                        }
-                    }
-                }
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 1").Build())
+                    .WithProperty("Date", new DatePropertyBuilder()
+                        .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(12).Build())
+                        .Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Singapore").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User123"}).Build())
+                    .Build(),
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 2").Build())
+                    .WithProperty("Date", new DatePropertyBuilder()
+                        .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(12).Build())
+                        .WithEndDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).Build())
+                        .Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Hong Kong").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User1234"}).Build())
+                    .Build()
             ]
         };
         _notionService.Setup(x =>
@@ -188,29 +173,23 @@ public class NotionEventRetrivalServiceTest
         {
             Results =
             [
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 1").Build() },
-                        { "Date", new DatePropertyBuilder()
-                            .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(12).Build())
-                            .Build()
-                        }
-                    }
-                },
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 2").Build() },
-                        { "Date", new DatePropertyBuilder()
-                            .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(11).WithDay(1).WithHour(12).Build())
-                            .WithEndDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(12).Build())
-                            .Build()
-                        }
-                    }
-                }
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 1").Build())
+                    .WithProperty("Date", new DatePropertyBuilder()
+                        .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(12).Build())
+                        .Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Singapore").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User123"}).Build())
+                    .Build(),
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 2").Build())
+                    .WithProperty("Date", new DatePropertyBuilder()
+                        .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(11).WithDay(1).WithHour(12).Build())
+                        .WithEndDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(12).Build())
+                        .Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Hong Kong").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User1234"}).Build())
+                    .Build()
             ]
         };
         _notionService.Setup(x =>
@@ -232,29 +211,23 @@ public class NotionEventRetrivalServiceTest
         {
             Results =
             [
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 1").Build() },
-                        { "Date", new DatePropertyBuilder()
-                            .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(12).Build())
-                            .Build()
-                        }
-                    }
-                },
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 2").Build() },
-                        { "Date", new DatePropertyBuilder()
-                            .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(11).WithDay(1).WithHour(12).Build())
-                            .WithEndDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).Build())
-                            .Build()
-                        }
-                    }
-                }
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 1").Build())
+                    .WithProperty("Date", new DatePropertyBuilder()
+                        .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(12).Build())
+                        .Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Singapore").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User123"}).Build())
+                    .Build(),
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 2").Build())
+                    .WithProperty("Date", new DatePropertyBuilder()
+                        .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(11).WithDay(1).WithHour(12).Build())
+                        .WithEndDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).Build())
+                        .Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Hong Kong").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User1234"}).Build())
+                    .Build()
             ]
         };
         _notionService.Setup(x =>
@@ -276,29 +249,23 @@ public class NotionEventRetrivalServiceTest
         {
             Results =
             [
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 1").Build() },
-                        { "Date", new DatePropertyBuilder()
-                            .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(12).WithMinute(30).Build())
-                            .Build()
-                        }
-                    }
-                },
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 2").Build() },
-                        { "Date", new DatePropertyBuilder()
-                            .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(13).WithMinute(31).Build())
-                            .WithEndDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).Build())
-                            .Build()
-                        }
-                    }
-                }
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 1").Build())
+                    .WithProperty("Date", new DatePropertyBuilder()
+                        .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(12).WithMinute(30).Build())
+                        .Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Singapore").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User123"}).Build())
+                    .Build(),
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 2").Build())
+                    .WithProperty("Date", new DatePropertyBuilder()
+                        .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(13).WithMinute(31).Build())
+                        .WithEndDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).Build())
+                        .Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Hong Kong").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User1234"}).Build())
+                    .Build()
             ]
         };
         _notionService.Setup(x =>
@@ -319,29 +286,23 @@ public class NotionEventRetrivalServiceTest
         {
             Results =
             [
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 1").Build() },
-                        { "Date", new DatePropertyBuilder()
-                            .WithStartDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).Build())
-                            .Build()
-                        }
-                    }
-                },
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 2").Build() },
-                        { "Date", new DatePropertyBuilder()
-                            .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(12).Build())
-                            .WithEndDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).WithHour(12).WithMinute(30).Build())
-                            .Build()
-                        }
-                    }
-                }
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 1").Build())
+                    .WithProperty("Date", new DatePropertyBuilder()
+                        .WithStartDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).Build())
+                        .Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Singapore").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User123"}).Build())
+                    .Build(),
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 2").Build())
+                    .WithProperty("Date", new DatePropertyBuilder()
+                        .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(12).Build())
+                        .WithEndDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).WithHour(12).WithMinute(30).Build())
+                        .Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Hong Kong").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User1234"}).Build())
+                    .Build()
             ]
         };
         _notionService.Setup(x =>
@@ -490,65 +451,45 @@ public class NotionEventRetrivalServiceTest
         {
             Results =
             [
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 1").Build() },
-                        { "Date", new DatePropertyBuilder()
-                            .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(2).WithHour(12)
-                                .WithMinute(30).Build())
-                            .Build()
-                        },
-                        {
-                            "Mini Reminder Description", new RichTextPropertyBuilder().WithText("To do something").Build()
-                        },
-                        {
-                            "Trigger Mini Reminder",
-                            new SelectPropertyBuilder().WithSelectOption(new SelectOption { Name = "One day before" })
-                                .Build()
-                        }
-                    }
-                },
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 2").Build() },
-                        { "Date", new DatePropertyBuilder()
-                            .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(13).WithMinute(31).Build())
-                            .WithEndDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).Build())
-                            .Build()
-                        },
-                        {
-                            "Mini Reminder Description", new RichTextPropertyBuilder().WithText("To do something").Build()
-                        },
-                        {
-                            "Trigger Mini Reminder",
-                            new SelectPropertyBuilder().WithSelectOption(null)
-                                .Build()
-                        }
-                    }
-                },
-                new Page
-                {
-                    Properties = new Dictionary<string, PropertyValue>
-                    {
-                        { "Name", new TitlePropertyBuilder().WithTitle("Event 2").Build() },
-                        { "Date", new DatePropertyBuilder()
-                            .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(13).WithMinute(31).Build())
-                            .WithEndDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).Build())
-                            .Build()
-                        },
-                        {
-                            "Mini Reminder Description", new RichTextPropertyBuilder().WithText("").Build()
-                        },
-                        {
-                            "Trigger Mini Reminder",
-                            new SelectPropertyBuilder().WithSelectOption(new SelectOption()).Build()
-                        }
-                    }
-                }
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 1").Build())
+                    .WithProperty("Date", new DatePropertyBuilder()
+                        .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(2).WithHour(12)
+                            .WithMinute(30).Build())
+                        .Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Singapore").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User123"}).Build())
+                    .WithProperty("Mini Reminder Description", new RichTextPropertyBuilder().WithText("To do something").Build())
+                    .WithProperty("Trigger Mini Reminder",
+                        new SelectPropertyBuilder().WithSelectOption(new SelectOption { Name = "One day before" })
+                            .Build())
+                    .Build(),
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 2").Build())
+                    .WithProperty("Date", new DatePropertyBuilder()
+                        .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(13).WithMinute(31).Build())
+                        .WithEndDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).Build())
+                        .Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Singapore").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User123"}).Build())
+                    .WithProperty("Mini Reminder Description", new RichTextPropertyBuilder().WithText("To do something").Build())
+                    .WithProperty("Trigger Mini Reminder",
+                        new SelectPropertyBuilder().WithSelectOption(new SelectOption { Name = "One day before" })
+                            .Build())
+                    .Build(),
+                new NotionPageBuilder()
+                    .WithProperty("Name", new TitlePropertyBuilder().WithTitle("Event 3").Build())
+                    .WithProperty("Date", new DatePropertyBuilder()
+                        .WithStartDt(new DateTimeBuilder().WithYear(2024).WithMonth(12).WithDay(1).WithHour(13).WithMinute(31).Build())
+                        .WithEndDt(new DateTimeBuilder().WithYear(2025).WithMonth(1).WithDay(1).Build())
+                        .Build())
+                    .WithProperty("Where", new RichTextPropertyBuilder().WithText("Singapore").Build())
+                    .WithProperty("Person", new PeoplePropertyBuilder().WithUser(new User{ Name = "User123"}).Build())
+                    .WithProperty("Mini Reminder Description", new RichTextPropertyBuilder().WithText("To do something").Build())
+                    .WithProperty("Trigger Mini Reminder",
+                        new SelectPropertyBuilder().WithSelectOption(new SelectOption { Name = "One day before" })
+                            .Build())
+                    .Build()
             ]
         };
         _notionService.Setup(x => x.GetPaginatedList(It.IsAny<DatabasesQueryParameters>())).ReturnsAsync(paginatedList);
