@@ -60,6 +60,14 @@ public class BotController(
         return Ok();
     }
 
+    [HttpGet("sendReminderForUnhandledEvents")]
+    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
+    public async Task<IActionResult> SendReminderForUnhandledEvents(CancellationToken cancellationToken)
+    {
+        await eventsMessageService.SendReminderForUnhandledEvents();
+        return Ok();
+    }
+
     [HttpPatch("updateEventsToCompleted")]
     [ServiceFilter(typeof(SecretKeyValidationAttribute))]
     public async Task<IActionResult> UpdateEventsToCompleted(CancellationToken cancellationToken)

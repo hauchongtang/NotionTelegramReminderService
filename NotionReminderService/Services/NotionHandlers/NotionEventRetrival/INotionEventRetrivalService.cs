@@ -8,4 +8,5 @@ public interface INotionEventRetrivalService
     public Task<List<NotionEvent>> GetOngoingEvents();
     public bool IsEventStillOngoing(NotionEvent e);
     public Task<List<NotionEvent>> GetMiniReminders();
+    public Task<List<NotionEvent>> GetUnhandledEvents();
 }

@@ -7,4 +7,5 @@ public interface IEventsMessageService
 {
     public Task<Message> SendEventsMessageToChannel(bool isMorning);
     public Task<Message?> SendMiniReminderMessageToChannel();
+    public Task<Message?> SendReminderForUnhandledEvents();
 }
