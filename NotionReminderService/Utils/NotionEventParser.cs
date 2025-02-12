@@ -46,7 +46,7 @@ public abstract class NotionEventParser
     private static Date? GetNotionEventDate(Page page)
     {
         var dateProperty = PropertyValueParser<DatePropertyValue>.GetValueFromPage(page, "Date");
-        return dateProperty!.Date;
+        return dateProperty?.Date;
     }
 
     private static string? GetNotionEventLocation(Page page)
@@ -79,6 +79,8 @@ public abstract class NotionEventParser
     private static string? GetNotionEventStatus(Page page)
     {
         var statusPropValue = PropertyValueParser<StatusPropertyValue>.GetValueFromPage(page, "Status");
+        if (statusPropValue is null) return null;
+        
         var status = statusPropValue!.Status;
         return status.Name;
     }
@@ -87,13 +89,15 @@ public abstract class NotionEventParser
     private static string? GetNotionEventTag(Page page)
     {
         var multiSelectPropValue = PropertyValueParser<MultiSelectPropertyValue>.GetValueFromPage(page, "Tags");
-        var tags = multiSelectPropValue.MultiSelect!.Select(x => x.Name);
-        return string.Join(" | ", tags);
+        var tags = multiSelectPropValue?.MultiSelect!.Select(x => x.Name);
+        return tags is null ? string.Empty : string.Join(" | ", tags);
     }
 
     private static ReminderPeriodOptions? GetNotionMiniReminderTrigger(Page page)
     {
         var selectPropValue = PropertyValueParser<SelectPropertyValue>.GetValueFromPage(page, "Trigger Mini Reminder");
+        if (selectPropValue is null) return null;
+        
         var triggerProperty = selectPropValue!.Select?.Name;
         return triggerProperty switch
         {
@@ -108,6 +112,8 @@ public abstract class NotionEventParser
     private static string? GetNotionMiniReminderDescription(Page page)
     {
         var richTextPropValue = PropertyValueParser<RichTextPropertyValue>.GetValueFromPage(page, "Mini Reminder Description");
+        if (richTextPropValue is null) return null;
+        
         var description =
             richTextPropValue!.RichText.Aggregate("", (s, rt) => s + rt.PlainText);
         return description;

@@ -19,7 +19,8 @@ public class PropertyValueParserTest
             {
                 { "Name", new TitlePropertyBuilder().WithTitle("Event 1").Build() },
                 { "Date", new DatePropertyBuilder().WithStartDt(firstDec2024).Build() },
-                { "Location", new RichTextPropertyBuilder().WithText("Singapore").Build() }
+                { "Location", new RichTextPropertyBuilder().WithText("Singapore").Build() },
+                { "Status", new StatusPropertyBuilder().WithStatus("testStatus").Build() }
             }
         };
     }
@@ -41,10 +42,18 @@ public class PropertyValueParserTest
     }
 
     [Test]
-    public void ParseRichTextPropertyBuilder()
+    public void ParseRichTextPropertyValue()
     {
-        var richTextPropertyBuilder = PropertyValueParser<RichTextPropertyValue>.GetValueFromPage(_pageWithProperties, "Location");
+        var richTextPropertyValue = PropertyValueParser<RichTextPropertyValue>.GetValueFromPage(_pageWithProperties, "Location");
 
-        Assert.That(richTextPropertyBuilder, Is.InstanceOf<RichTextPropertyValue>());
+        Assert.That(richTextPropertyValue, Is.InstanceOf<RichTextPropertyValue>());
+    }
+
+    [Test]
+    public void ParseStatusPropertyValue()
+    {
+        var statusPropertyValue = PropertyValueParser<StatusPropertyValue>.GetValueFromPage(_pageWithProperties, "Status");
+
+        Assert.That(statusPropertyValue, Is.InstanceOf<StatusPropertyValue>());
     }
 }

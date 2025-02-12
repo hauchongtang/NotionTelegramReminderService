@@ -7,7 +7,8 @@ public static class PropertyValueParser<T> {
     {
         if (!page.Properties.ContainsKey(keyValue)) return default;
 
-        page.Properties.TryGetValue(keyValue, out var targetPropertyValue);
-        return (T)Convert.ChangeType(targetPropertyValue, typeof(T))!;
+        if (page.Properties.TryGetValue(keyValue, out var targetPropertyValue) is false) return default;
+        
+        return (T)Convert.ChangeType(targetPropertyValue, typeof(T));
     }
 }
