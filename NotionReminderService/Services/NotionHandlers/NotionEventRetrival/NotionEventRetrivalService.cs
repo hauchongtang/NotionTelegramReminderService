@@ -124,7 +124,7 @@ public class NotionEventRetrivalService(INotionService notionService, IDateTimeP
                     new StatusFilter("Status", equal: "KIV"),
                     new StatusFilter("Status", equal: "90% Done")
                 ]
-            };
+            }
         };
         var pages = await notionService.GetPaginatedList(databaseQuery);
         return pages;
