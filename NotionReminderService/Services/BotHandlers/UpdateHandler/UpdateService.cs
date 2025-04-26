@@ -58,18 +58,23 @@ public class UpdateService(
     private async Task OnMessage(Message msg)
     {
         logger.LogInformation("Receive message type: {MessageType}", msg.Type);
-        var messageText = msg.Text!.ToLower();
-        if (messageText.Contains("/settings"))
-        {
-            await HandleSettings(msg, messageText);
-        }
-        else if (messageText.Contains("hi") && messageText.Contains("bot"))
-        {
-            await HandleAddNewEvent(msg, messageText);
-        }
-        else if (msg.Location is not null)
+        if (msg.Location is not null)
         {
             await HandleLocation(msg);
+            return;
+        }
+
+        if (msg.Text != null)
+        {
+            var messageText = msg.Text.ToLower();
+            if (messageText.Contains("/settings"))
+            {
+                await HandleSettings(msg, messageText);
+            }
+            else if (messageText.Contains("hi") && messageText.Contains("bot"))
+            {
+                await HandleAddNewEvent(msg, messageText);
+            }
         }
     }
 
@@ -77,7 +82,7 @@ public class UpdateService(
     {
             logger.LogInformation("Received location: {Location}", msg.Location);
             var location = msg.Location;
-            var busArrivals = await transportService.GetNearestBusStops(location!.Latitude, location.Longitude, radius: 0.3);
+            var busArrivals = await transportService.GetNearestBusStops(location!.Latitude, location.Longitude, radius: 0.2);
             if (busArrivals is null)
             {
                 await telegramBotClient.SendMessage(msg.Chat, "No bus stops found nearby.");
@@ -85,49 +90,72 @@ public class UpdateService(
             }
             var messageBody = $"""
                                <b>{busArrivals.Count} Bus Stops Nearby:</b>
-                               <b><i></i></b>
                                --------------------------
 
                                """;
             foreach (var busStop in busArrivals)
             {
                 messageBody += $"""
-                                <b>Bus Stop:</b> {busStop.BusStopDescription} - {busStop.BusStopCode}
-                                <b>Bus Arrival Times:</b>
+                                🚏 <b>{busStop.BusStopDescription}</b> - <b>{busStop.BusStopCode}</b>
+                                
+                                <b>Bus Arrival Times 🕧:</b>
+                                
                                 """;
                 if (busStop.Services == null) continue;
                 foreach (var busArrival in busStop.Services)
                 {
                     messageBody += $"""
-                                    <b>Bus Service:</b> {busArrival.ServiceNo} - {busArrival.Operator}
-                                    """;
-                    if (busArrival.NextBus is not null)
-                    {
-                        messageBody += $"""
-                                        <b>Bus Arriving in </b> {dateTimeProvider.Now.Subtract(busArrival.NextBus.EstimatedArrival!.Value).Minutes}
-                                        """;
-                    }
-
-                    if (busArrival.NextBus1 is not null)
-                    {
-                        messageBody += $"""
-                                        ,{dateTimeProvider.Now.Subtract(busArrival.NextBus1.EstimatedArrival!.Value).Minutes}
-                                        """;
-                    }
-
-                    if (busArrival.NextBus2 is not null)
-                    {
-                        messageBody += $"""
-                                        ,{dateTimeProvider.Now.Subtract(busArrival.NextBus2.EstimatedArrival!.Value).Minutes}
-                                        """;
-                    }
-
-                    messageBody += $"""
-                                    minutes
                                     
-                                    --------------------------
+                                    <b>🚌 {busArrival.ServiceNo}</b> ({busArrival.Operator}) arriving in:
+                                    
                                     """;
+                    if (busArrival.NextBus?.EstimatedArrival != null)
+                    {
+                        if (busArrival.NextBus.Type is not null)
+                        {
+                            messageBody += $"""({BusUtil.BusType[busArrival.NextBus.Type]}):""";
+                        }
+                        messageBody +=
+                            $"""
+                              <b><i>{BusUtil.GetBusArrivalTimeSpan(busArrival.NextBus.EstimatedArrival.Value, dateTimeProvider.Now)}</i></b>
+                             """;
+                    }
+                        
+
+                    if (busArrival.NextBus1?.EstimatedArrival != null)
+                    {
+                        if (busArrival.NextBus1.Type is not null)
+                        {
+                            messageBody += $""", ({BusUtil.BusType[busArrival.NextBus1.Type]}):""";
+                        }
+                        messageBody +=
+                            $"""
+                              <b><i>{BusUtil.GetBusArrivalTimeSpan(busArrival.NextBus1.EstimatedArrival.Value, dateTimeProvider.Now)}</i></b>
+                             """;
+                    }
+
+                    if (busArrival.NextBus2?.EstimatedArrival != null)
+                    {
+                        if (busArrival.NextBus2.Type is not null)
+                        {
+                            messageBody += $""", ({BusUtil.BusType[busArrival.NextBus2.Type]}):""";
+                        }
+                        messageBody +=
+                            $"""
+                              <b><i>{BusUtil.GetBusArrivalTimeSpan(busArrival.NextBus2.EstimatedArrival.Value, dateTimeProvider.Now)}</i></b>
+                             """;
+                    }
+                    messageBody += $"""
+                                 
+                                 -------------
+                                 
+                                 """;
                 }
+                messageBody += $"""
+                                 
+                                 --------------------------
+                                 
+                                 """;
             }
             await telegramBotClient.SendMessage(msg.Chat, messageBody, ParseMode.Html);
     }
