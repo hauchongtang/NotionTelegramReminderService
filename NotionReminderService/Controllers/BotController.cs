@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NotionReminderService.Services.BotHandlers.MessageHandler;
+using NotionReminderService.Services.BotHandlers.TransportHandler;
 using NotionReminderService.Services.BotHandlers.UpdateHandler;
 using NotionReminderService.Services.BotHandlers.WeatherHandler;
 using NotionReminderService.Services.NotionHandlers.NotionEventUpdater;
@@ -17,6 +18,7 @@ public class BotController(
     IEventsMessageService eventsMessageService,
     IWeatherMessageService weatherMessageService,
     INotionEventUpdaterService notionEventUpdaterService,
+    ITransportService transportService,
     IDateTimeProvider dateTimeProvider,
     ILogger<BotController> logger)
     : ControllerBase
@@ -91,5 +93,14 @@ public class BotController(
     {
         var deletedPages = await notionEventUpdaterService.UpdateEventsToTrash();
         return Ok($"{deletedPages.Count} cancellation events deleted.");
+    }
+    
+    [HttpGet("getNearestBusStops")]
+    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
+    public async Task<IActionResult> GetNearestBusStops([FromQuery] double latitude, [FromQuery] double longitude,
+        [FromQuery] double radius = 1.0, CancellationToken cancellationToken = default)
+    {
+        var busStops = await transportService.GetNearestBusStops(latitude, longitude, radius);
+        return Ok(busStops);
     }
 }

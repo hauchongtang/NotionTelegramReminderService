@@ -1,8 +1,10 @@
 using NotionReminderService.Api.GoogleAi;
+using NotionReminderService.Api.Transport;
 using NotionReminderService.Api.Weather;
 using NotionReminderService.Config;
 using NotionReminderService.HostedServices.TelegramBot;
 using NotionReminderService.Services.BotHandlers.MessageHandler;
+using NotionReminderService.Services.BotHandlers.TransportHandler;
 using NotionReminderService.Services.BotHandlers.UpdateHandler;
 using NotionReminderService.Services.BotHandlers.WeatherHandler;
 using NotionReminderService.Services.NotionHandlers.NotionEventRetrival;
@@ -32,6 +34,9 @@ builder.Services.Configure<WeatherConfiguration>(weatherConfigSection);
 var googleAiConfigSection = builder.Configuration.GetSection("GoogleAiConfiguration");
 builder.Services.Configure<GoogleAiConfiguration>(googleAiConfigSection);
 
+var transportConfigSection = builder.Configuration.GetSection("TransportConfiguration");
+builder.Services.Configure<TransportConfiguration>(transportConfigSection);
+
 // Notion Configuration
 var notionConfiguration = builder.Configuration.GetSection("NotionConfiguration");
 builder.Services.Configure<NotionConfiguration>(notionConfiguration);
@@ -43,6 +48,7 @@ builder.Services.AddNotionClient(options =>
 // APIs
 builder.Services.AddScoped<IWeatherApi, WeatherApi>();
 builder.Services.AddScoped<IGoogleAiApi, GoogleAiApi>();
+builder.Services.AddScoped<ITransportApi, TransportApi>();
 
 // Services
 builder.Services.AddScoped<IUpdateService, UpdateService>();
@@ -50,6 +56,7 @@ builder.Services.AddScoped<INotionEventRetrivalService, NotionEventRetrivalServi
 builder.Services.AddScoped<IEventsMessageService, EventsMessageService>();
 builder.Services.AddScoped<INotionService, NotionService>();
 builder.Services.AddScoped<IWeatherMessageService, WeatherMessageService>();
+builder.Services.AddScoped<ITransportService, TransportService>();
 builder.Services.AddScoped<INotionEventUpdaterService, NotionEventUpdaterService>();
 builder.Services.AddScoped<IDateTimeProvider, SystemDateTimeProvider>();
 
