@@ -24,7 +24,6 @@ public class BotController(
     : ControllerBase
 {
     [HttpPost("getUpdates")]
-    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
     public async Task<IActionResult> Post([FromBody] Update update, CancellationToken ct)
     {
         try
