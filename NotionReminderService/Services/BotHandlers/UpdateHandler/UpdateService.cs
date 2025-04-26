@@ -83,9 +83,10 @@ public class UpdateService(
             logger.LogInformation("Received location: {Location}", msg.Location);
             var location = msg.Location;
             var busArrivals = await transportService.GetNearestBusStops(location!.Latitude, location.Longitude, radius: 0.2);
-            if (busArrivals is null)
+            if (busArrivals is null || busArrivals.Count == 0)
             {
-                await telegramBotClient.SendMessage(msg.Chat, "No bus stops found nearby.");
+                logger.LogInformation("No bus stops found nearby.");
+                await telegramBotClient.SendMessage(msg.Chat, "No bus stops found nearby or Busses are not available.");
                 return;
             }
             var messageBody = $"""
