@@ -1,11 +1,10 @@
-using System.Text;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Notion.Client;
-using Notion.Client.Extensions;
 using NotionReminderService.Api.GoogleAi;
 using NotionReminderService.Config;
 using NotionReminderService.Models.NotionEvent;
+using NotionReminderService.Services.BotHandlers.TransportHandler;
 using NotionReminderService.Services.BotHandlers.WeatherHandler;
 using NotionReminderService.Services.NotionHandlers.NotionService;
 using NotionReminderService.Utils;
@@ -16,7 +15,6 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
 using Telegram.Bot.Types.ReplyMarkups;
-using Color = Notion.Client.Color;
 using User = Notion.Client.User;
 
 namespace NotionReminderService.Services.BotHandlers.UpdateHandler;
@@ -26,6 +24,7 @@ public class UpdateService(
     IWeatherMessageService weatherMessageService,
     INotionService notionService,
     IGoogleAiApi googleAiApi,
+    ITransportService transportService,
     IDateTimeProvider dateTimeProvider,
     IOptions<NotionConfiguration> notionConfig,
     ILogger<IUpdateService> logger)
@@ -59,15 +58,107 @@ public class UpdateService(
     private async Task OnMessage(Message msg)
     {
         logger.LogInformation("Receive message type: {MessageType}", msg.Type);
-        var messageText = msg.Text!.ToLower();
-        if (messageText.Contains("/settings"))
+        if (msg.Location is not null)
         {
-            await HandleSettings(msg, messageText);
+            await HandleLocation(msg);
+            return;
         }
-        else if (messageText.Contains("hi") && messageText.Contains("bot"))
+
+        if (msg.Text != null)
         {
-            await HandleAddNewEvent(msg, messageText);
+            var messageText = msg.Text.ToLower();
+            if (messageText.Contains("/settings"))
+            {
+                await HandleSettings(msg, messageText);
+            }
+            else if (messageText.Contains("hi") && messageText.Contains("bot"))
+            {
+                await HandleAddNewEvent(msg, messageText);
+            }
         }
+    }
+
+    private async Task HandleLocation(Message msg)
+    {
+            logger.LogInformation("Received location: {Location}", msg.Location);
+            var location = msg.Location;
+            var busArrivals = await transportService.GetNearestBusStops(location!.Latitude, location.Longitude, radius: 0.2);
+            if (busArrivals is null || busArrivals.Count == 0)
+            {
+                logger.LogInformation("No bus stops found nearby.");
+                await telegramBotClient.SendMessage(msg.Chat, "No bus stops found nearby or Busses are not available.");
+                return;
+            }
+            var messageBody = $"""
+                               <b>{busArrivals.Count} Bus Stops Nearby:</b>
+                               --------------------------
+
+                               """;
+            foreach (var busStop in busArrivals)
+            {
+                messageBody += $"""
+                                🚏 <b>{busStop.BusStopDescription}</b> - <b>{busStop.BusStopCode}</b>
+                                
+                                <b>Bus Arrival Times 🕧:</b>
+                                
+                                """;
+                if (busStop.Services == null) continue;
+                foreach (var busArrival in busStop.Services)
+                {
+                    messageBody += $"""
+                                    
+                                    <b>🚌 {busArrival.ServiceNo}</b> ({busArrival.Operator}) arriving in:
+                                    
+                                    """;
+                    if (busArrival.NextBus?.EstimatedArrival != null)
+                    {
+                        if (busArrival.NextBus.Type is not null)
+                        {
+                            messageBody += $"""({BusUtil.BusType[busArrival.NextBus.Type]}):""";
+                        }
+                        messageBody +=
+                            $"""
+                              <b><i>{BusUtil.GetBusArrivalTimeSpan(busArrival.NextBus.EstimatedArrival.Value, dateTimeProvider.Now)}</i></b>
+                             """;
+                    }
+                        
+
+                    if (busArrival.NextBus1?.EstimatedArrival != null)
+                    {
+                        if (busArrival.NextBus1.Type is not null)
+                        {
+                            messageBody += $""", ({BusUtil.BusType[busArrival.NextBus1.Type]}):""";
+                        }
+                        messageBody +=
+                            $"""
+                              <b><i>{BusUtil.GetBusArrivalTimeSpan(busArrival.NextBus1.EstimatedArrival.Value, dateTimeProvider.Now)}</i></b>
+                             """;
+                    }
+
+                    if (busArrival.NextBus2?.EstimatedArrival != null)
+                    {
+                        if (busArrival.NextBus2.Type is not null)
+                        {
+                            messageBody += $""", ({BusUtil.BusType[busArrival.NextBus2.Type]}):""";
+                        }
+                        messageBody +=
+                            $"""
+                              <b><i>{BusUtil.GetBusArrivalTimeSpan(busArrival.NextBus2.EstimatedArrival.Value, dateTimeProvider.Now)}</i></b>
+                             """;
+                    }
+                    messageBody += $"""
+                                 
+                                 -------------
+                                 
+                                 """;
+                }
+                messageBody += $"""
+                                 
+                                 --------------------------
+                                 
+                                 """;
+            }
+            await telegramBotClient.SendMessage(msg.Chat, messageBody, ParseMode.Html);
     }
 
     private async Task HandleSettings(Message msg, string messageText)
@@ -225,85 +316,6 @@ public class UpdateService(
 
              {formattedEventMsg}
              """, ParseMode.Html, replyMarkup: replyMarkup);
-    }
-
-    async Task<Message> Usage(Message msg)
-    {
-        const string usage = """
-                <b><u>Bot menu</u></b>:
-                /photo          - send a photo
-                /inline_buttons - send inline buttons
-                /keyboard       - send keyboard buttons
-                /remove         - remove keyboard buttons
-                /request        - request location or contact
-                /inline_mode    - send inline-mode results list
-                /poll           - send a poll
-                /poll_anonymous - send an anonymous poll
-                /throw          - what happens if handler fails
-            """;
-        return await telegramBotClient.SendMessage(msg.Chat, usage, parseMode: ParseMode.Html, replyMarkup: new ReplyKeyboardRemove());
-    }
-
-    async Task<Message> SendPhoto(Message msg)
-    {
-        await telegramBotClient.SendChatAction(msg.Chat, ChatAction.UploadPhoto);
-        await Task.Delay(2000); // simulate a long task
-        await using var fileStream = new FileStream("Files/bot.gif", FileMode.Open, FileAccess.Read);
-        return await telegramBotClient.SendPhoto(msg.Chat, fileStream, caption: "Read https://telegrambots.github.io/book/");
-    }
-
-    // Send inline keyboard. You can process responses in OnCallbackQuery handler
-    async Task<Message> SendInlineKeyboard(Message msg)
-    {
-        var inlineMarkup = new InlineKeyboardMarkup()
-            .AddNewRow("1.1", "1.2", "1.3")
-            .AddNewRow()
-                .AddButton("WithCallbackData", "CallbackData")
-                .AddButton(InlineKeyboardButton.WithUrl("WithUrl", "https://github.com/TelegramBots/Telegram.Bot"));
-        return await telegramBotClient.SendMessage(msg.Chat, "Inline buttons:", replyMarkup: inlineMarkup);
-    }
-
-    async Task<Message> SendReplyKeyboard(Message msg)
-    {
-        var replyMarkup = new ReplyKeyboardMarkup(true)
-            .AddNewRow("1.1", "1.2", "1.3")
-            .AddNewRow().AddButton("2.1").AddButton("2.2");
-        return await telegramBotClient.SendMessage(msg.Chat, "Keyboard buttons:", replyMarkup: replyMarkup);
-    }
-
-    async Task<Message> RemoveKeyboard(Message msg)
-    {
-        return await telegramBotClient.SendMessage(msg.Chat, "Removing keyboard", replyMarkup: new ReplyKeyboardRemove());
-    }
-
-    async Task<Message> RequestContactAndLocation(Message msg)
-    {
-        var replyMarkup = new ReplyKeyboardMarkup(true)
-            .AddButton(KeyboardButton.WithRequestLocation("Location"))
-            .AddButton(KeyboardButton.WithRequestContact("Contact"));
-        return await telegramBotClient.SendMessage(msg.Chat, "Who or Where are you?", replyMarkup: replyMarkup);
-    }
-
-    async Task<Message> StartInlineQuery(Message msg)
-    {
-        var button = InlineKeyboardButton.WithSwitchInlineQueryCurrentChat("Inline Mode");
-        return await telegramBotClient.SendMessage(msg.Chat, "Press the button to start Inline Query\n\n" +
-            "(Make sure you enabled Inline Mode in @BotFather)", replyMarkup: new InlineKeyboardMarkup(button));
-    }
-
-    async Task<Message> SendPoll(Message msg)
-    {
-        return await telegramBotClient.SendPoll(msg.Chat, "Question", PollOptions, isAnonymous: false);
-    }
-
-    async Task<Message> SendAnonymousPoll(Message msg)
-    {
-        return await telegramBotClient.SendPoll(chatId: msg.Chat, "Question", PollOptions);
-    }
-
-    static Task<Message> FailingHandler(Message msg)
-    {
-        throw new NotImplementedException("FailingHandler");
     }
 
     // Process Inline Keyboard callback data

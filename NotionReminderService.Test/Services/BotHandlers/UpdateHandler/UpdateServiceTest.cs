@@ -7,6 +7,7 @@ using NotionReminderService.Api.GoogleAi;
 using NotionReminderService.Config;
 using NotionReminderService.Models.GoogleAI;
 using NotionReminderService.Models.NotionEvent;
+using NotionReminderService.Services.BotHandlers.TransportHandler;
 using NotionReminderService.Services.BotHandlers.UpdateHandler;
 using NotionReminderService.Services.BotHandlers.WeatherHandler;
 using NotionReminderService.Services.NotionHandlers.NotionService;
@@ -33,6 +34,7 @@ public class UpdateServiceTest
 	private Page _pageWithProperties;
 	private UpdateService _updateService;
 	private NotionEvent? _notionEvent;
+	private Mock<ITransportService> _transportService;
 
 	[SetUp]
 	public void Setup()
@@ -41,8 +43,8 @@ public class UpdateServiceTest
 		_weatherMsgService = new Mock<IWeatherMessageService>();
 		_notionService = new Mock<INotionService>();
 		_googleAiApi = new Mock<IGoogleAiApi>();
+		_transportService = new Mock<ITransportService>();
 		_dtProvider = new Mock<IDateTimeProvider>();
-		_notionConfig = new Mock<IOptions<NotionConfiguration>>();
 		_notionConfig = new Mock<IOptions<NotionConfiguration>>();
 		var notionConfig = new NotionConfiguration
 		{
@@ -72,7 +74,7 @@ public class UpdateServiceTest
 		_notionEvent = NotionEventParser.GetNotionEvent(_pageWithProperties);
 		
 		_updateService = new UpdateService(_botClient.Object, _weatherMsgService.Object, _notionService.Object,
-			_googleAiApi.Object, _dtProvider.Object, _notionConfig.Object, _logger.Object);
+			_googleAiApi.Object, _transportService.Object, _dtProvider.Object, _notionConfig.Object, _logger.Object);
 	}
 	
 	[Test]

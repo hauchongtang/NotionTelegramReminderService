@@ -93,4 +93,29 @@ public class EventsMessageService(INotionEventRetrivalService notionEventRetriva
             ParseMode.Html);
         return message;
     }
+
+    public async Task<Message?> SendReminderForUnhandledEvents() {
+        var events = await notionEventRetrivalService.GetUnhandledEvents();
+        if (events.Count == 0) return null;
+
+        var messageBody = $"""
+                           <b>⚠️ All Unhandled Events </b> | <b>{events.Count} Events(s)</b>
+                           --------------------------
+                           """;
+        foreach (var notionEvent in events) {
+            if (notionEvent.Status == "Rescheduled") {
+                // Do something
+            }
+
+            if (notionEvent.Status == "90 % Done") {
+                // Do something
+            }
+
+            if (notionEvent.Status == "KIV") {
+                // Do something
+            }
+        }
+        var message = await telegramBotClient.SendMessage(new ChatId(botConfig.Value.ChatId), messageBody, ParseMode.Html);
+        return message;
+    }
 }

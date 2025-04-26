@@ -36,7 +36,8 @@ public class NotionEventRetrivalService(INotionService notionService, IDateTimeP
             try
             {
                 var notionEvent = NotionEventParser.GetNotionEvent(page);
-                if (notionEvent is null) continue;
+                if (IsEventIgnore(notionEvent)) continue;
+
                 events.Add(notionEvent);
             }
             catch (Exception e)
@@ -60,7 +61,7 @@ public class NotionEventRetrivalService(INotionService notionService, IDateTimeP
         foreach (var page in pages.Results)
         {
             var notionEvent = NotionEventParser.GetNotionEvent(page);
-            if (notionEvent is null) continue;
+            if (IsEventIgnore(notionEvent)) continue;
             events.Add(notionEvent);
         }
 
@@ -78,6 +79,14 @@ public class NotionEventRetrivalService(INotionService notionService, IDateTimeP
         return ongoingEvents.ToList();
     }
 
+    public bool IsEventIgnore(NotionEvent notionEvent) {
+        return notionEvent is null
+            && notionEvent.Status is null
+            && notionEvent.Status.Contains("Rescheduled")
+            && notionEvent.Status.Contains("KIV")
+            && notionEvent.Status.Contains("90% Done");
+    }
+
     public bool IsEventStillOngoing(NotionEvent e)
     {
         bool stillOngoing;
@@ -93,6 +102,32 @@ public class NotionEventRetrivalService(INotionService notionService, IDateTimeP
         }
 
         return stillOngoing;
+    }
+
+    public async Task<List<NotionEvent>> GetUnhandledEvents() {
+        var unhandledPages = await GetUnhandledPages();
+        var events = new List<NotionEvent>();
+        foreach (var page in unhandledPages.Results) {
+            var notionEvent = NotionEventParser.GetNotionEvent(page);
+            if (notionEvent is null) continue;
+
+            events.Add(notionEvent);
+        }
+        return events;
+    }
+
+    private async Task<PaginatedList<Page>> GetUnhandledPages() {
+        var databaseQuery = new DatabasesQueryParameters{
+            Filter = new CompoundFilter {
+                And = [
+                    new StatusFilter("Status", equal: "Rescheduled"),
+                    new StatusFilter("Status", equal: "KIV"),
+                    new StatusFilter("Status", equal: "90% Done")
+                ]
+            }
+        };
+        var pages = await notionService.GetPaginatedList(databaseQuery);
+        return pages;
     }
 
     private async Task<PaginatedList<Page>> GetPages(DateTime from, DateTime to)
