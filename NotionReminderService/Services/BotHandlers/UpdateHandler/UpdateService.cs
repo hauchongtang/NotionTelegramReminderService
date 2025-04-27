@@ -158,7 +158,12 @@ public class UpdateService(
                                  
                                  """;
             }
-            await telegramBotClient.SendMessage(msg.Chat, messageBody, ParseMode.Html);
+            var inlineOptions = new InlineKeyboardMarkup()
+                .AddNewRow(InlineKeyboardButton.WithCallbackData(
+                    text: "Refresh", 
+                    callbackData: $"RefreshLocation~{msg.Location?.Latitude}~{msg.Location?.Longitude}")
+                );
+            await telegramBotClient.SendMessage(msg.Chat, messageBody, ParseMode.Html, replyMarkup: inlineOptions);
     }
 
     private async Task HandleSettings(Message msg, string messageText)
@@ -349,6 +354,28 @@ public class UpdateService(
                 {
                     await telegramBotClient.SendMessage(callbackQuery.Message!.Chat,
                         $"Feature is unavailable. It might be on maintenance or is disabled.");
+                    break;
+                }
+
+                if (callbackQuery.Data.Contains("RefreshLocation"))
+                {
+                    var parameters = callbackQuery.Data.Split('~');
+                    if (!(double.TryParse(parameters[1], out var latitude) &&
+                         double.TryParse(parameters[2], out var longitude)))
+                    {
+                        await telegramBotClient.SendMessage(callbackQuery.Message!.Chat, 
+                            $"Unable to refresh location. Unable to retrieve previous location data. " +
+                            $"Please send the location pin again or contact administrator");
+                        break;
+                    }
+
+                    var messageObj = callbackQuery.Message;
+                    messageObj!.Location = new Location
+                    {
+                        Longitude = longitude,
+                        Latitude = latitude
+                    };
+                    await HandleLocation(messageObj);
                     break;
                 }
                 
