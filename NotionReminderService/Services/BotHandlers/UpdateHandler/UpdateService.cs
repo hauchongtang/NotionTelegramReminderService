@@ -82,7 +82,7 @@ public class UpdateService(
     {
             logger.LogInformation("Received location: {Location}", msg.Location);
             var location = msg.Location;
-            var busArrivals = await transportService.GetNearestBusStops(location!.Latitude, location.Longitude, radius: 0.2);
+            var busArrivals = await transportService.GetNearestBusStops(location!.Latitude, location.Longitude, radius: 0.1);
             if (busArrivals is null || busArrivals.Count == 0)
             {
                 logger.LogInformation("No bus stops found nearby.");
