@@ -14,6 +14,6 @@ public static class BusUtil
         var timeSpan = arrivalTime - timeNow;
         var minutes = (int)timeSpan.TotalMinutes;
         if (minutes == 0) return "Arr";
-        return $"{minutes} min";
+        return $"{arrivalTime.ToString("h:mm:ss tt")}";
     }
 }
