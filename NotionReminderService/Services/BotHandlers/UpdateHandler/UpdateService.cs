@@ -78,7 +78,7 @@ public class UpdateService(
         }
     }
 
-    private async Task HandleLocation(Message msg)
+    /*private async Task HandleLocation(Message msg)
     {
             logger.LogInformation("Received location: {Location}", msg.Location);
             var location = msg.Location;
@@ -164,7 +164,70 @@ public class UpdateService(
                     callbackData: $"RefreshLocation~{msg.Location?.Latitude}~{msg.Location?.Longitude}")
                 );
             await telegramBotClient.SendMessage(msg.Chat, messageBody, ParseMode.Html, replyMarkup: inlineOptions);
+    }*/
+
+    private async Task HandleLocation(Message msg)
+    {
+        logger.LogInformation("Received location: {Location}", msg.Location);
+        var location = msg.Location;
+        var busArrivals =
+            await transportService.GetNearestBusStops(location!.Latitude, location.Longitude, radius: 0.1);
+        if (busArrivals is null || busArrivals.Count == 0)
+        {
+            logger.LogInformation("No bus stops found nearby.");
+            await telegramBotClient.SendMessage(msg.Chat, "No bus stops found nearby or Buses are not available.");
+            return;
+        }
+
+        var messageBody = $"<b>🚌 Bus Arrivals ({dateTimeProvider.Now:h:mm tt})</b>\n\n";
+        foreach (var busStop in busArrivals)
+        {
+            messageBody += $"🚏 <b>{busStop.BusStopDescription}</b> (<b>{busStop.BusStopCode}</b>)\n";
+            if (busStop.Services == null) continue;
+
+            foreach (var busArrival in busStop.Services)
+            {
+                // Gather up to 3 arrivals with deck type and estimated time
+                var arrivals = new List<string>();
+
+                if (busArrival.NextBus?.EstimatedArrival != null)
+                {
+                    var type = busArrival.NextBus.Type is not null ? BusUtil.BusType[busArrival.NextBus.Type] : "";
+                    arrivals.Add($"{type} {busArrival.NextBus.EstimatedArrival.Value:h:mm tt}");
+                }
+
+                if (busArrival.NextBus1?.EstimatedArrival != null)
+                {
+                    var type = busArrival.NextBus1.Type is not null ? BusUtil.BusType[busArrival.NextBus1.Type] : "";
+                    arrivals.Add($"{type} {busArrival.NextBus1.EstimatedArrival.Value:h:mm tt}");
+                }
+
+                if (busArrival.NextBus2?.EstimatedArrival != null)
+                {
+                    var type = busArrival.NextBus2.Type is not null ? BusUtil.BusType[busArrival.NextBus2.Type] : "";
+                    arrivals.Add($"{type} {busArrival.NextBus2.EstimatedArrival.Value:h:mm tt}");
+                }
+
+                if (arrivals.Count > 0)
+                {
+                    messageBody += $"<b>{busArrival.ServiceNo}</b>: {string.Join(", ", arrivals)}\n";
+                }
+            }
+
+            messageBody += "\n"; // Space between stops
+        }
+
+        // Add legend for abbreviations
+        messageBody += "<i>DD: Double Deck, SD: Single Deck</i>";
+
+        var inlineOptions = new InlineKeyboardMarkup()
+            .AddNewRow(InlineKeyboardButton.WithCallbackData(
+                text: "Refresh",
+                callbackData: $"RefreshLocation~{msg.Location?.Latitude}~{msg.Location?.Longitude}")
+            );
+        await telegramBotClient.SendMessage(msg.Chat, messageBody, ParseMode.Html, replyMarkup: inlineOptions);
     }
+
 
     private async Task HandleSettings(Message msg, string messageText)
     {
