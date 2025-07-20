@@ -4,6 +4,7 @@ using Moq;
 using Newtonsoft.Json;
 using Notion.Client;
 using NotionReminderService.Api.GoogleAi;
+using NotionReminderService.Api.PlanPulseAgent;
 using NotionReminderService.Config;
 using NotionReminderService.Models.GoogleAI;
 using NotionReminderService.Models.NotionEvent;
@@ -35,6 +36,8 @@ public class UpdateServiceTest
 	private UpdateService _updateService;
 	private NotionEvent? _notionEvent;
 	private Mock<ITransportService> _transportService;
+	private Mock<IPlanPulseAgent> _planPulseAgent;
+	private Mock<IOptions<TransportConfiguration>> _transportConfig;
 
 	[SetUp]
 	public void Setup()
@@ -43,9 +46,11 @@ public class UpdateServiceTest
 		_weatherMsgService = new Mock<IWeatherMessageService>();
 		_notionService = new Mock<INotionService>();
 		_googleAiApi = new Mock<IGoogleAiApi>();
+		_planPulseAgent = new Mock<IPlanPulseAgent>();
 		_transportService = new Mock<ITransportService>();
 		_dtProvider = new Mock<IDateTimeProvider>();
 		_notionConfig = new Mock<IOptions<NotionConfiguration>>();
+		_transportConfig = new Mock<IOptions<TransportConfiguration>>();
 		var notionConfig = new NotionConfiguration
 		{
 			NotionAuthToken = "123",
@@ -74,7 +79,8 @@ public class UpdateServiceTest
 		_notionEvent = NotionEventParser.GetNotionEvent(_pageWithProperties);
 		
 		_updateService = new UpdateService(_botClient.Object, _weatherMsgService.Object, _notionService.Object,
-			_googleAiApi.Object, _transportService.Object, _dtProvider.Object, _notionConfig.Object, _logger.Object);
+			_googleAiApi.Object, _transportService.Object, _planPulseAgent.Object, _dtProvider.Object, _notionConfig.Object, 
+			_transportConfig.Object, _logger.Object);
 	}
 	
 	[Test]
