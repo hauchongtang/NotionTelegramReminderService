@@ -1,4 +1,5 @@
 using NotionReminderService.Api.GoogleAi;
+using NotionReminderService.Api.PlanPulseAgent;
 using NotionReminderService.Api.Transport;
 using NotionReminderService.Api.Weather;
 using NotionReminderService.Config;
@@ -34,6 +35,9 @@ builder.Services.Configure<WeatherConfiguration>(weatherConfigSection);
 var googleAiConfigSection = builder.Configuration.GetSection("GoogleAiConfiguration");
 builder.Services.Configure<GoogleAiConfiguration>(googleAiConfigSection);
 
+var planPulseAgentConfigSection = builder.Configuration.GetSection("PlanPulseAgentConfiguration");
+builder.Services.Configure<PlanPulseAgentConfiguration>(planPulseAgentConfigSection);
+
 var transportConfigSection = builder.Configuration.GetSection("TransportConfiguration");
 builder.Services.Configure<TransportConfiguration>(transportConfigSection);
 
@@ -48,6 +52,7 @@ builder.Services.AddNotionClient(options =>
 // APIs
 builder.Services.AddScoped<IWeatherApi, WeatherApi>();
 builder.Services.AddScoped<IGoogleAiApi, GoogleAiApi>();
+builder.Services.AddScoped<IPlanPulseAgent, PlanPulseAgent>();
 builder.Services.AddScoped<ITransportApi, TransportApi>();
 
 // Services

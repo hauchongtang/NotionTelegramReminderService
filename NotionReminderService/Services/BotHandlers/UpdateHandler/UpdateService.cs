@@ -2,7 +2,9 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Notion.Client;
 using NotionReminderService.Api.GoogleAi;
+using NotionReminderService.Api.PlanPulseAgent;
 using NotionReminderService.Config;
+using NotionReminderService.Models.Agent;
 using NotionReminderService.Models.NotionEvent;
 using NotionReminderService.Services.BotHandlers.TransportHandler;
 using NotionReminderService.Services.BotHandlers.WeatherHandler;
@@ -25,8 +27,10 @@ public class UpdateService(
     INotionService notionService,
     IGoogleAiApi googleAiApi,
     ITransportService transportService,
+    IPlanPulseAgent planPulseAgent,
     IDateTimeProvider dateTimeProvider,
     IOptions<NotionConfiguration> notionConfig,
+    IOptions<TransportConfiguration> transportConfig,
     ILogger<IUpdateService> logger)
     : IUpdateService
 {
@@ -70,6 +74,10 @@ public class UpdateService(
             if (messageText.Contains("/settings"))
             {
                 await HandleSettings(msg, messageText);
+            }
+            else if (messageText.Contains("/agent"))
+            {
+                await HandleAgentCommunication(msg, messageText);
             }
             else if (messageText.Contains("hi") && messageText.Contains("bot"))
             {
@@ -171,7 +179,7 @@ public class UpdateService(
         logger.LogInformation("Received location: {Location}", msg.Location);
         var location = msg.Location;
         var busArrivals =
-            await transportService.GetNearestBusStops(location!.Latitude, location.Longitude, radius: 0.1);
+            await transportService.GetNearestBusStops(location!.Latitude, location.Longitude, radius: transportConfig.Value.Radius);
         if (busArrivals is null || busArrivals.Count == 0)
         {
             logger.LogInformation("No bus stops found nearby.");
@@ -244,6 +252,22 @@ public class UpdateService(
             .AddButton(InlineKeyboardButton.WithCallbackData(text: "Set Telegram Webhook URL", callbackData: $"setTgWebhook"));
         await telegramBotClient.SendMessage(msg.Chat, "Hi Admin! Here is the settings menu below:", replyMarkup: inlineOptionsForSettings);
         return;
+    }
+    
+    private async Task HandleAgentCommunication(Message msg, string messageText)
+    {
+        // Handle agent communication here
+        try
+        {
+            var request = new AgentRequest($"{msg.From?.Id}-{msg.From?.Username}", messageText);
+            var response = await planPulseAgent.SendMessageAsync(request);
+            await telegramBotClient.SendMessage(msg.Chat, response.Response);
+        }
+        catch (Exception e)
+        {
+            await telegramBotClient.SendMessage(msg.Chat,
+                "An error occurred while communicating with the agent. Please try again later. Error: " + e.Message);
+        }
     }
 
     private async Task HandleAddNewEvent(Message msg, string messageText)
