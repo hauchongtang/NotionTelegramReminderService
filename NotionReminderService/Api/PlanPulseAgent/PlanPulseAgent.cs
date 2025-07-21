@@ -11,6 +11,7 @@ public class PlanPulseAgent(IHttpClientFactory httpClientFactory, IOptions<PlanP
     public async Task<AgentResponseModel> SendMessageAsync(AgentRequest request)
     {
         var client = httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Secret-Key",  config.Value.SecretKey);
         try
         {
             var requestUri = $"{config.Value.Url}/v1/telegram/";
