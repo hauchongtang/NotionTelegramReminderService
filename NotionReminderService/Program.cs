@@ -32,6 +32,9 @@ builder.Services.AddHttpClient("webhook").AddTypedClient<ITelegramBotClient>(
 var weatherConfigSection = builder.Configuration.GetSection("WeatherConfiguration");
 builder.Services.Configure<WeatherConfiguration>(weatherConfigSection);
 
+var googleApiConfigSection = builder.Configuration.GetSection("GoogleApiConfiguration");
+builder.Services.Configure<GoogleApiConfiguration>(googleApiConfigSection);
+
 var googleAiConfigSection = builder.Configuration.GetSection("GoogleAiConfiguration");
 builder.Services.Configure<GoogleAiConfiguration>(googleAiConfigSection);
 

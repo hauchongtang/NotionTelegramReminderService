@@ -259,6 +259,7 @@ public class UpdateService(
         // Handle agent communication here
         try
         {
+            messageText = messageText.Replace("/agent", "");
             var request = new AgentRequest($"{msg.From?.Id}-{msg.From?.Username}", messageText);
             var response = await planPulseAgent.SendMessageAsync(request);
             await telegramBotClient.SendMessage(msg.Chat, response.Response);
