@@ -64,7 +64,7 @@ public class UpdateService(
         logger.LogInformation("Receive message type: {MessageType}", msg.Type);
         if (msg.Location is not null)
         {
-            await HandleLocation(msg);
+            await HandleLocation(msg, 1);
             return;
         }
 
@@ -174,16 +174,24 @@ public class UpdateService(
             await telegramBotClient.SendMessage(msg.Chat, messageBody, ParseMode.Html, replyMarkup: inlineOptions);
     }*/
 
-    private async Task HandleLocation(Message msg)
+    private async Task HandleLocation(Message msg, int page=1)
     {
         logger.LogInformation("Received location: {Location}", msg.Location);
         var location = msg.Location;
         var busArrivals =
-            await transportService.GetNearestBusStops(location!.Latitude, location.Longitude, radius: transportConfig.Value.Radius);
-        if (busArrivals is null || busArrivals.Count == 0)
+            await transportService.GetNearestBusStops(location!.Latitude, location.Longitude,
+                radius: transportConfig.Value.Radius, page);
+        if (busArrivals is null)
         {
             logger.LogInformation("No bus stops found nearby.");
             await telegramBotClient.SendMessage(msg.Chat, "No bus stops found nearby or Buses are not available.");
+            return;
+        }
+
+        if (busArrivals.Count == 0)
+        {
+            await telegramBotClient.SendMessage(msg.Chat,
+                "You have reached the last page. Resend location or navigate to previous pages.");
             return;
         }
 
@@ -227,12 +235,31 @@ public class UpdateService(
 
         // Add legend for abbreviations
         messageBody += "<i>DD: Double Deck, SD: Single Deck</i>";
+        var inlineKeyboardConfig = new List<InlineKeyboardButton>();
+        if (page > 1)
+        {
+            inlineKeyboardConfig.Add(InlineKeyboardButton.WithCallbackData(
+                text: "Prev",
+                callbackData: $"RefreshLocation~{msg.Location?.Latitude}~{msg.Location?.Longitude}~{page - 1}"));
+        }
+        inlineKeyboardConfig.Add(InlineKeyboardButton.WithCallbackData(
+            text: "🔄",
+            callbackData: $"RefreshLocation~{msg.Location?.Latitude}~{msg.Location?.Longitude}~{page}"));
+        if (busArrivals.Count == 3)
+        {
+            inlineKeyboardConfig.Add(InlineKeyboardButton.WithCallbackData(
+                text: "Next",
+                callbackData: $"RefreshLocation~{msg.Location?.Latitude}~{msg.Location?.Longitude}~{page + 1}"));
+        }
 
         var inlineOptions = new InlineKeyboardMarkup()
-            .AddNewRow(InlineKeyboardButton.WithCallbackData(
-                text: "Refresh",
-                callbackData: $"RefreshLocation~{msg.Location?.Latitude}~{msg.Location?.Longitude}")
-            );
+                .AddNewRow(inlineKeyboardConfig.ToArray());
+        if (page > 1)
+        {
+            inlineOptions.AddNewRow(InlineKeyboardButton.WithCallbackData(
+                text: "Back to 1st",
+                callbackData: $"RefreshLocation~{msg.Location?.Latitude}~{msg.Location?.Longitude}~{1}"));
+        }
         await telegramBotClient.SendMessage(msg.Chat, messageBody, ParseMode.Html, replyMarkup: inlineOptions);
     }
 
@@ -449,7 +476,8 @@ public class UpdateService(
                 {
                     var parameters = callbackQuery.Data.Split('~');
                     if (!(double.TryParse(parameters[1], out var latitude) &&
-                         double.TryParse(parameters[2], out var longitude)))
+                         double.TryParse(parameters[2], out var longitude) &&
+                         int.TryParse(parameters[3], out var page)))
                     {
                         await telegramBotClient.SendMessage(callbackQuery.Message!.Chat, 
                             $"Unable to refresh location. Unable to retrieve previous location data. " +
@@ -463,7 +491,7 @@ public class UpdateService(
                         Longitude = longitude,
                         Latitude = latitude
                     };
-                    await HandleLocation(messageObj);
+                    await HandleLocation(messageObj, page);
                     break;
                 }
                 

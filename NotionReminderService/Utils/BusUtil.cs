@@ -4,8 +4,8 @@ public static class BusUtil
 {
     public static Dictionary<string, string> BusType = new()
     {
-        { "SD", "Single Deck" },
-        { "DD", "Double Deck" },
+        { "SD", "Single" },
+        { "DD", "Double" },
         { "BD", "Bendy" },
     };
     

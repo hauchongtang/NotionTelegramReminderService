@@ -15,7 +15,7 @@ internal class TelegramBotSetup(
         await client.DeleteWebhook(cancellationToken: cancellationToken).ConfigureAwait(false);
         
         var webhookUrl = botConfig.Value.BotWebhookUrl.OriginalString;
-
+        
         // Replaces the previous webhook on every restart
         logger.LogInformation("Setting up the webhook");
         await client.SetWebhook(
@@ -25,7 +25,7 @@ internal class TelegramBotSetup(
         )
         .ConfigureAwait(false);
         logger.LogInformation("Webhook set up successfully at {Url}", webhookUrl);
-
+        
         logger.LogInformation("Setup completed successfully");
     }
 

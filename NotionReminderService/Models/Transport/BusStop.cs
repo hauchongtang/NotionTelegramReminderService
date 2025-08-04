@@ -1,9 +1,12 @@
+using System.ComponentModel.DataAnnotations;
 using Newtonsoft.Json;
 
 namespace NotionReminderService.Models.Transport;
 
 public class BusStop
 {
+    [Key]
+    public int Id { get; set; }
     [JsonProperty(nameof(BusStopCode))]
     public int BusStopCode { get; set; }
 

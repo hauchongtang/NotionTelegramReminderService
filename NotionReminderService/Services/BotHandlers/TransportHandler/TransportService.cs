@@ -1,12 +1,16 @@
 using NotionReminderService.Api.Transport;
 using NotionReminderService.Models.Transport;
+using NotionReminderService.Repositories.Transport;
 using NotionReminderService.Utils;
 
 namespace NotionReminderService.Services.BotHandlers.TransportHandler;
 
-public class TransportService(ITransportApi transportApi) : ITransportService
+public class TransportService(
+    ILogger<TransportService> logger,
+    ITransportRepository transportRepository,
+    ITransportApi transportApi) : ITransportService
 {
-    public async Task<List<BusArrival>?> GetNearestBusStops(double latitude, double longitude, double radius = 1.0)
+    public async Task UpdateBusStops()
     {
         var page = 1;
         var busStops = new List<BusStop>();
@@ -18,23 +22,45 @@ public class TransportService(ITransportApi transportApi) : ITransportService
             page++;
         }
         
-        if (busStops.Count == 0) return null;
-        
-        var nearestBusStops = new SortedList<double, BusArrival>();
-        foreach (var stop in busStops)
+        if (busStops.Count == 0) return;
+
+        await transportRepository.UpdateBusStops(busStops);
+    }
+    
+    public async Task<List<BusArrival>?> GetNearestBusStops(double latitude, double longitude, double radius = 1.0,
+        int page = 1)
+    {
+        var busStops = await transportRepository.GetBusStops();
+        var filteredBusStops = busStops
+            .Where(stop => LocationUtil.HaversineDistance(latitude, longitude, stop.Latitude, stop.Longitude) <= radius)
+            .ToList();
+
+        // Create a list of tasks: each getting bus arrival info and calculating the distance
+        var tasks = filteredBusStops.Select(async stop =>
         {
-            var distance = 
-                LocationUtil.HaversineDistance(latitude, longitude, stop.Latitude, stop.Longitude);
-            if (distance <= radius)
+            var busArrival = await transportApi.GetBusArrivalByBusStopCode(stop.BusStopCode);
+            if (busArrival is not null)
             {
-                var busArrival = await transportApi.GetBusArrivalByBusStopCode(stop.BusStopCode);
-                if (busArrival is not null)
-                {
-                    busArrival.BusStopDescription = stop.Description;
-                    nearestBusStops.Add(distance, busArrival);
-                }
+                busArrival.BusStopDescription = stop.Description;
+                var distance = LocationUtil.HaversineDistance(latitude, longitude, stop.Latitude, stop.Longitude);
+                return (Distance: distance, BusArrival: busArrival);
             }
-        }
-        return nearestBusStops.Values.ToList();
+            return (Distance: double.MaxValue, BusArrival: (BusArrival?)null);
+        }).ToList();
+
+        // Wait for all API calls to complete
+        var results = await Task.WhenAll(tasks);
+
+        // Filter out nulls and sort by distance
+        var pageSize = 3;
+        var nearestSorted = results
+            .Where(x => x.BusArrival is not null && Math.Abs(x.Distance - double.MaxValue) > 0.01)
+            .OrderBy(x => x.Distance)
+            .Select(x => x.BusArrival!)
+            .Skip((page-1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+        
+        return nearestSorted;
     }
 }

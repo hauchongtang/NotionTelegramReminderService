@@ -1,19 +1,6 @@
-using NotionReminderService.Api.GoogleAi;
-using NotionReminderService.Api.PlanPulseAgent;
-using NotionReminderService.Api.Transport;
-using NotionReminderService.Api.Weather;
-using NotionReminderService.Config;
 using NotionReminderService.HostedServices.TelegramBot;
-using NotionReminderService.Services.BotHandlers.MessageHandler;
-using NotionReminderService.Services.BotHandlers.TransportHandler;
-using NotionReminderService.Services.BotHandlers.UpdateHandler;
-using NotionReminderService.Services.BotHandlers.WeatherHandler;
-using NotionReminderService.Services.NotionHandlers.NotionEventRetrival;
-using NotionReminderService.Services.NotionHandlers.NotionEventUpdater;
-using NotionReminderService.Services.NotionHandlers.NotionService;
 using NotionReminderService.Utils;
 using Serilog;
-using Telegram.Bot;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,50 +10,32 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .WriteTo.Console()
     .Enrich.FromLogContext());
 
-// Setup configuration
-var botConfigSection = builder.Configuration.GetSection("BotConfiguration");
-builder.Services.Configure<BotConfiguration>(botConfigSection);
-builder.Services.AddHttpClient("webhook").AddTypedClient<ITelegramBotClient>(
-    httpClient => new TelegramBotClient(botConfigSection.Get<BotConfiguration>()!.BotToken, httpClient));
-
-var weatherConfigSection = builder.Configuration.GetSection("WeatherConfiguration");
-builder.Services.Configure<WeatherConfiguration>(weatherConfigSection);
-
-var googleApiConfigSection = builder.Configuration.GetSection("GoogleApiConfiguration");
-builder.Services.Configure<GoogleApiConfiguration>(googleApiConfigSection);
-
-var googleAiConfigSection = builder.Configuration.GetSection("GoogleAiConfiguration");
-builder.Services.Configure<GoogleAiConfiguration>(googleAiConfigSection);
-
-var planPulseAgentConfigSection = builder.Configuration.GetSection("PlanPulseAgentConfiguration");
-builder.Services.Configure<PlanPulseAgentConfiguration>(planPulseAgentConfigSection);
-
-var transportConfigSection = builder.Configuration.GetSection("TransportConfiguration");
-builder.Services.Configure<TransportConfiguration>(transportConfigSection);
-
-// Notion Configuration
-var notionConfiguration = builder.Configuration.GetSection("NotionConfiguration");
-builder.Services.Configure<NotionConfiguration>(notionConfiguration);
-builder.Services.AddNotionClient(options =>
+// Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
 {
-    options.AuthToken = notionConfiguration.Get<NotionConfiguration>()!.NotionAuthToken;
+    options.OperationFilter<SecretKeyHeader>();
 });
 
+// Setup configuration
+builder.Services.ConfigureTelegramBotClient(builder.Configuration);
+
+builder.Services.AddConfigurations(builder.Configuration);
+
+// Notion Configuration
+builder.Services.ConfigureNotionClient(builder.Configuration); 
+
 // APIs
-builder.Services.AddScoped<IWeatherApi, WeatherApi>();
-builder.Services.AddScoped<IGoogleAiApi, GoogleAiApi>();
-builder.Services.AddScoped<IPlanPulseAgent, PlanPulseAgent>();
-builder.Services.AddScoped<ITransportApi, TransportApi>();
+builder.Services.ConfigureApis();
+
+// Databases
+builder.Services.ConfigureDatabase(builder.Configuration);
+
+// Repositories
+builder.Services.ConfigureRepositories();
 
 // Services
-builder.Services.AddScoped<IUpdateService, UpdateService>();
-builder.Services.AddScoped<INotionEventRetrivalService, NotionEventRetrivalService>();
-builder.Services.AddScoped<IEventsMessageService, EventsMessageService>();
-builder.Services.AddScoped<INotionService, NotionService>();
-builder.Services.AddScoped<IWeatherMessageService, WeatherMessageService>();
-builder.Services.AddScoped<ITransportService, TransportService>();
-builder.Services.AddScoped<INotionEventUpdaterService, NotionEventUpdaterService>();
-builder.Services.AddScoped<IDateTimeProvider, SystemDateTimeProvider>();
+builder.Services.ConfigureServices();
 
 // Hosted Services
 builder.Services.AddHostedService<TelegramBotSetup>();
@@ -88,6 +57,8 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHealthChecks("/health");
 
