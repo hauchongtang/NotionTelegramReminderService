@@ -31,7 +31,11 @@ public class TransportService(
         int page = 1)
     {
         var busStops = await transportRepository.GetBusStops();
-        var filteredBusStops = busStops
+        var uniqueBusStops = busStops
+            .GroupBy(stop => stop.BusStopCode)
+            .Select(g => g.First())
+            .ToList();
+        var filteredBusStops = uniqueBusStops
             .Where(stop => LocationUtil.HaversineDistance(latitude, longitude, stop.Latitude, stop.Longitude) <= radius)
             .ToList();
 
