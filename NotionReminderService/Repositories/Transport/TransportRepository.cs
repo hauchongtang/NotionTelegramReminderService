@@ -9,7 +9,9 @@ public class TransportRepository(DatabaseContext context) : ITransportRepository
 {
     public async Task<List<BusStop>> GetBusStops()
     {
-        var result = await context.BusStops.ToListAsync();
+        var result = await context.BusStops
+            .GroupBy(x => x.BusStopCode).Select(g => g.First())
+            .ToListAsync();
         return result;
     }
 
