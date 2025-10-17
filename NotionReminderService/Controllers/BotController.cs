@@ -102,4 +102,12 @@ public class BotController(
         var busStops = await transportService.GetNearestBusStops(latitude, longitude, radius);
         return Ok(busStops);
     }
+
+    [HttpGet("sendHourlyRainfallSummary")]
+    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
+    public async Task<IActionResult> SendHourlyRainfallSummary()
+    {
+        await weatherMessageService.SendRainfallSummaryMessage(null);
+        return Ok();
+    }
 }

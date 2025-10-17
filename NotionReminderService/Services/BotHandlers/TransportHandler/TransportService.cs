@@ -8,7 +8,7 @@ namespace NotionReminderService.Services.BotHandlers.TransportHandler;
 public class TransportService(
     ILogger<TransportService> logger,
     ITransportRepository transportRepository,
-    ITransportApi transportApi) : ITransportService
+    ITransportApi transportApi, IDateTimeProvider dateTimeProvider) : ITransportService
 {
     public async Task UpdateBusStops()
     {
@@ -24,6 +24,7 @@ public class TransportService(
         
         if (busStops.Count == 0) return;
 
+        busStops.ForEach(b => b.UpdatedOn = dateTimeProvider.Now);
         await transportRepository.UpdateBusStops(busStops);
     }
     
@@ -31,11 +32,7 @@ public class TransportService(
         int page = 1)
     {
         var busStops = await transportRepository.GetBusStops();
-        var uniqueBusStops = busStops
-            .GroupBy(stop => stop.BusStopCode)
-            .Select(g => g.First())
-            .ToList();
-        var filteredBusStops = uniqueBusStops
+        var filteredBusStops = busStops
             .Where(stop => LocationUtil.HaversineDistance(latitude, longitude, stop.Latitude, stop.Longitude) <= radius)
             .ToList();
 

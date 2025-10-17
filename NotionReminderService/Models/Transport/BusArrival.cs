@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-public class BusArrival
+public class BusArrival: BaseModel
 {
     [JsonProperty(nameof(BusStopCode))]
     public int BusStopCode { get; set; }
@@ -13,7 +13,7 @@ public class BusArrival
     public string? BusStopDescription { get; set; }
 }
 
-public class BusService
+public class BusService: BaseModel
 {
     [JsonProperty(nameof(ServiceNo))]
     public string? ServiceNo { get; set; }
@@ -31,7 +31,7 @@ public class BusService
     public NextBus? NextBus3 { get; set; }
 }
 
-public class NextBus
+public class NextBus: BaseModel
 {
     [JsonProperty(nameof(OriginCode))]
     public string? OriginCode { get; set; }

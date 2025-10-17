@@ -7,5 +7,5 @@ public interface IDateTimeProvider
 
 public class SystemDateTimeProvider : IDateTimeProvider
 {
-    public DateTime Now => DateTime.Now;
+    public DateTime Now => DateTime.UtcNow.AddHours(8);
 }

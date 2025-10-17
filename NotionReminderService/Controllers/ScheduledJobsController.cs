@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NotionReminderService.Services.BotHandlers.TransportHandler;
+using NotionReminderService.Services.BotHandlers.WeatherHandler;
 using NotionReminderService.Utils;
 
 namespace NotionReminderService.Controllers;
@@ -10,7 +11,8 @@ namespace NotionReminderService.Controllers;
 [AllowAnonymous]
 public class ScheduledJobsController(
     ILogger<ScheduledJobsController> logger,
-    ITransportService transportService)
+    ITransportService transportService, 
+    IWeatherMessageService weatherMessageService)
     : ControllerBase
 {
     [HttpPatch(nameof(UpdateBusStops))]
@@ -24,6 +26,38 @@ public class ScheduledJobsController(
         catch (Exception e)
         {
             logger.LogError($"{nameof(ScheduledJobsController)}.{nameof(UpdateBusStops)} failed. {e.Message})");
+            return BadRequest(e.Message);
+        }
+        return Ok();
+    }
+    
+    [HttpPatch(nameof(UpdateRainfallStations))]
+    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
+    public async Task<IActionResult> UpdateRainfallStations()
+    {
+        try
+        {
+            await weatherMessageService.UpdateRainfallStations();
+        }
+        catch (Exception e)
+        {
+            logger.LogError($"{nameof(ScheduledJobsController)}.{nameof(UpdateRainfallStations)} failed. {e.Message})");
+            return BadRequest(e.Message);
+        }
+        return Ok();
+    }
+
+    [HttpPatch(nameof(UpdateRainfallReadings))]
+    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
+    public async Task<IActionResult> UpdateRainfallReadings()
+    {
+        try
+        {
+            await weatherMessageService.UpdateRainfallReadings();
+        }
+        catch (Exception e)
+        {
+            logger.LogError($"{nameof(ScheduledJobsController)}.{nameof(UpdateRainfallReadings)} failed. {e.Message})");
             return BadRequest(e.Message);
         }
         return Ok();

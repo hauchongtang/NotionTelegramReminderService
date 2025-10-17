@@ -1,11 +1,13 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using Newtonsoft.Json;
 
 namespace NotionReminderService.Models.Transport;
 
-public class BusStop
+public class BusStop: BaseModel
 {
     [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
     [JsonProperty(nameof(BusStopCode))]
     public int BusStopCode { get; set; }
@@ -23,7 +25,7 @@ public class BusStop
     public double Longitude { get; set; }
 }
 
-public class BusStopsResponse
+public class BusStopsResponse: BaseModel
 {
     [JsonProperty("value")]
     public List<BusStop>? Value { get; set; }

@@ -5,6 +5,7 @@ using NotionReminderService.Api.Weather;
 using NotionReminderService.Config;
 using NotionReminderService.Models;
 using NotionReminderService.Repositories.Transport;
+using NotionReminderService.Repositories.Weather;
 using NotionReminderService.Services.BotHandlers.MessageHandler;
 using NotionReminderService.Services.BotHandlers.TransportHandler;
 using NotionReminderService.Services.BotHandlers.UpdateHandler;
@@ -59,6 +60,7 @@ public static class DependencyInjectionHelper
     public static IServiceCollection ConfigureRepositories(this IServiceCollection services)
     {
         services.AddScoped<ITransportRepository, TransportRepository>();
+        services.AddScoped<IWeatherRepository, WeatherRepository>();
         return services;
     }
 
