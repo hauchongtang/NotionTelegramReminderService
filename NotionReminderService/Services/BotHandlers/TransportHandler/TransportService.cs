@@ -8,7 +8,7 @@ namespace NotionReminderService.Services.BotHandlers.TransportHandler;
 public class TransportService(
     ILogger<TransportService> logger,
     ITransportRepository transportRepository,
-    ITransportApi transportApi) : ITransportService
+    ITransportApi transportApi, IDateTimeProvider dateTimeProvider) : ITransportService
 {
     public async Task UpdateBusStops()
     {
@@ -24,6 +24,7 @@ public class TransportService(
         
         if (busStops.Count == 0) return;
 
+        busStops.ForEach(b => b.UpdatedOn = dateTimeProvider.Now);
         await transportRepository.UpdateBusStops(busStops);
     }
     

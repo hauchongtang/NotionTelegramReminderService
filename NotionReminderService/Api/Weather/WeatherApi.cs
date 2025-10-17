@@ -25,4 +25,16 @@ public class WeatherApi(IHttpClientFactory httpClientFactory, IDateTimeProvider 
 
         return await ResponseHandler.HandleResponse<RealTimeWeatherResponse>(response);
     }
+
+    public async Task<RainfallResponse> GetRealTimeRainfallByLocation()
+    {
+        using HttpClient httpClient = httpClientFactory.CreateClient();
+        var dateNow = $"{dateTimeProvider.Now:yyyy-MM-dd}T{dateTimeProvider.Now:HH:mm:ss}";
+        var response =
+            await httpClient.GetAsync(
+                new Uri($"{weatherConfig.Value.DataGovUrl}/real-time/api/rainfall?date={dateNow}"));
+        response.EnsureSuccessStatusCode();
+        
+        return await ResponseHandler.HandleResponse<RainfallResponse>(response);
+    }
 }
