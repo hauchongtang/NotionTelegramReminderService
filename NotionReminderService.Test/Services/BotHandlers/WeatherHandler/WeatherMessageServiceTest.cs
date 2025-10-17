@@ -6,7 +6,9 @@ using NotionReminderService.Api.Weather;
 using NotionReminderService.Config;
 using NotionReminderService.Models.GoogleAI;
 using NotionReminderService.Models.Weather;
+using NotionReminderService.Repositories.Weather;
 using NotionReminderService.Services.BotHandlers.WeatherHandler;
+using NotionReminderService.Utils;
 using Telegram.Bot;
 using Telegram.Bot.Requests.Abstractions;
 using Telegram.Bot.Types;
@@ -21,6 +23,8 @@ public class WeatherMessageServiceTest
     private Mock<IOptions<BotConfiguration>> _botConfig;
     private Mock<ILogger<IWeatherMessageService>> _logger;
     private WeatherMessageService _weatherMessageService;
+    private Mock<IWeatherRepository> _weatherRepository;
+    private Mock<IDateTimeProvider> _dateTimeProvider;
 
     [SetUp]
     public void SetUp()
@@ -28,10 +32,12 @@ public class WeatherMessageServiceTest
         _weatherApi = new Mock<IWeatherApi>();
         _googleAiApi = new Mock<IGoogleAiApi>();
         _botClient = new Mock<ITelegramBotClient>();
+        _weatherRepository = new Mock<IWeatherRepository>();
+        _dateTimeProvider = new Mock<IDateTimeProvider>();
         _botConfig = new Mock<IOptions<BotConfiguration>>();
         _logger = new Mock<ILogger<IWeatherMessageService>>();
         _weatherMessageService = new WeatherMessageService(_weatherApi.Object, _googleAiApi.Object, _botClient.Object,
-            _botConfig.Object, _logger.Object);
+            _weatherRepository.Object, _dateTimeProvider.Object, _botConfig.Object, _logger.Object);
     }
 
     [Test]
