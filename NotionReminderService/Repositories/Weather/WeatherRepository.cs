@@ -16,7 +16,7 @@ public class WeatherRepository(DatabaseContext context, IDateTimeProvider dateTi
     
     public async Task<Rainfall?> GetRainfallByDateTime(DateTime dateTime)
     {
-        var utcDateTime = dateTime.ToUniversalTime().AddHours(8);
+        var utcDateTime = dateTime.ToUniversalTime();
         return await context.Rainfalls.Where(x => x.Date == utcDateTime).FirstOrDefaultAsync();
     }
 

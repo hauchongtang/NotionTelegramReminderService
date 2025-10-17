@@ -452,6 +452,11 @@ public class UpdateService(
                 await weatherMessageService.SendMessage(callbackQuery.Message!.Chat);
                 break;
             }
+            case "triggerRainfallSummaryLastHour":
+            {
+                await weatherMessageService.SendRainfallSummaryMessage(callbackQuery.Message!.Chat);
+                break;
+            }
             case "triggerCreateNewEventFlow":
             {
                 await telegramBotClient.SendMessage(callbackQuery.Message!.Chat,

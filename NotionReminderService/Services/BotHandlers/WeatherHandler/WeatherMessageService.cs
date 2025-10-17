@@ -122,20 +122,20 @@ public class WeatherMessageService(
         {
             if (reading.Amount <= 0.0)
             {
-                rainfallSummary.NoRainfallStations.Add(reading.StationId);
+                rainfallSummary.NoRainfallStations.Add(reading.Location);
             }
             else if (reading.Amount > 0.0 && reading.Amount <= rainfallIntensitySettings.LowerBound)
             {
-                rainfallSummary.LightRainfallStations.Add(reading.StationId);
+                rainfallSummary.LightRainfallStations.Add(reading.Location);
             }
             else if (reading.Amount > rainfallIntensitySettings.LowerBound &&
                      reading.Amount <= rainfallIntensitySettings.UpperBound)
             {
-                rainfallSummary.ModerateRainfallStations.Add(reading.StationId);
+                rainfallSummary.ModerateRainfallStations.Add(reading.Location);
             }
             else
             {
-                rainfallSummary.HeavyRainfallStations.Add(reading.StationId);
+                rainfallSummary.HeavyRainfallStations.Add(reading.Location);
             }
         }
         return rainfallSummary;
@@ -146,17 +146,40 @@ public class WeatherMessageService(
         var rainfallSummary = await GetRainfallSummaryLastHour();
         if (rainfallSummary is null) return;
         var textToSend = "";
+        var totalStations = rainfallSummary.NoRainfallStations.Count +
+                            rainfallSummary.LightRainfallStations.Count +
+                            rainfallSummary.ModerateRainfallStations.Count +
+                            rainfallSummary.HeavyRainfallStations.Count;
+        var noRainText = rainfallSummary.NoRainfallStations.Count == totalStations
+            ? "All stations reported no rainfall in the last hour. ☀️"
+            : $"No Rain ☀️({rainfallSummary.NoRainfallStations.Count}): {string.Join(", ", rainfallSummary.NoRainfallStations.OrderByDescending(x => x))}";
+        var lightRainText = rainfallSummary.LightRainfallStations.Count == totalStations
+            ? "All stations reported light rainfall in the last hour. 🌦️"
+            : $"Light Rain 🌦️({rainfallSummary.LightRainfallStations.Count}): {string.Join(", ", rainfallSummary.LightRainfallStations.OrderByDescending(x => x))}";
+        var moderateRainText = rainfallSummary.ModerateRainfallStations.Count == totalStations
+            ? "All stations reported moderate rainfall in the last hour. 🌧️"
+            : $"Moderate Rain 🌧️({rainfallSummary.ModerateRainfallStations.Count}): {string.Join(", ", rainfallSummary.ModerateRainfallStations.OrderByDescending(x => x))}";
+        var heavyRainText = rainfallSummary.HeavyRainfallStations.Count == totalStations
+            ? "All stations reported heavy rainfall in the last hour. ⛈️"
+            : $"Heavy Rain ⛈️({rainfallSummary.HeavyRainfallStations.Count}): {string.Join(", ", rainfallSummary.HeavyRainfallStations.OrderByDescending(x => x))}";
         textToSend += $"""
                        <b>Rainfall Summary for the Last Hour (Since {dateTimeProvider.Now.Hour}:00):</b>
                        Light: >= 2.5mm/hr, Moderate: 2.5mm/hr - 7.5mm/hr, Heavy: > 7.5mm/hr
                        
-                       No Rain({rainfallSummary.NoRainfallStations.Count}): {string.Join(", ", rainfallSummary.NoRainfallStations)}
+                       {noRainText}
                        
-                       Light Rain({rainfallSummary.LightRainfallStations.Count}): {string.Join(", ", rainfallSummary.LightRainfallStations)}
+                       {lightRainText}
                        
-                       Heavy Rain({rainfallSummary.HeavyRainfallStations.Count}): {string.Join(", ", rainfallSummary.HeavyRainfallStations)}
+                       {moderateRainText}
+                       
+                       {heavyRainText}
                        """;
-        await botClient.SendMessage(chat ?? new ChatId(botConfig.Value.ChatId), textToSend, ParseMode.Html);
+        var replyMarkup = new InlineKeyboardMarkup()
+            .AddNewRow()
+            .AddButton(InlineKeyboardButton.WithCallbackData("Retrieve Again", "triggerRainfallSummaryLastHour"))
+            .AddNewRow()
+            .AddButton(InlineKeyboardButton.WithCallbackData("Get Weather Forecast", "triggerForecast"));
+        await botClient.SendMessage(chat ?? new ChatId(botConfig.Value.ChatId), textToSend, ParseMode.Html, replyMarkup: replyMarkup);
     }
     
     public async Task SendMessage(Chat? chat)
@@ -184,12 +207,15 @@ public class WeatherMessageService(
                           {weatherText}
                           
                           <i>Powered by Gemini LLM agent using real time data from <a href="https://data.gov.sg">data.gov.sg</a></i>
-                          Forcast for → {weatherData?[0].ValidPeriod.Text}
+                          Forecast for → {weatherData?[0].ValidPeriod.Text}
                           """;
-        
+
         var replyMarkup = new InlineKeyboardMarkup()
             .AddNewRow()
-            .AddButton(InlineKeyboardButton.WithCallbackData("Retrieve Again", "triggerForecast"));
+            .AddButton(InlineKeyboardButton.WithCallbackData("Retrieve Again", "triggerForecast"))
+            .AddNewRow()
+            .AddButton(
+                InlineKeyboardButton.WithCallbackData("Get Rainfall (Last 1h)", "triggerRainfallSummaryLastHour"));
         await botClient.SendMessage(chat ?? new ChatId(botConfig.Value.ChatId), textToSend, ParseMode.Html,
             replyMarkup: replyMarkup);
     }
