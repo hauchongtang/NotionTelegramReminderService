@@ -59,12 +59,13 @@ public class WeatherMessageService(
         var dateTimeOffset = DateTimeOffset.Parse(rainfallResponse.Data.Readings[0].Timestamp);
         var dateTimeNow = dateTimeOffset.DateTime;
         var slotNumber = dateTimeNow.Minute < 30 ? 1 : 2;
-        var existingSlots = await weatherRepository.GetRainFallSlots(rainfallId!, slotNumber);
+        var existingSlots = await weatherRepository.GetRainFallSlots(rainfallId!, slotNumber, dateTimeNow.Hour);
         var aggregatedReadings = rainfallResponse.Data.Readings[0].Data
             .GroupBy(x => x.StationId)
             .Select(g =>
             {
-                var existingReading = existingSlots.FirstOrDefault(x => x.StationId == g.Key);
+                var existingReading =
+                    existingSlots.FirstOrDefault(x => x.StationId == g.Key && x.HourOfDay == dateTimeNow.Hour);
                 var currentValue = g.First().Value;
                 var aggregatedValue = existingReading?.RainfallAmount + currentValue ?? currentValue;
                 return new RainfallSlot

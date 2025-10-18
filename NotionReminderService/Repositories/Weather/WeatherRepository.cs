@@ -20,10 +20,10 @@ public class WeatherRepository(DatabaseContext context, IDateTimeProvider dateTi
         return await context.Rainfalls.Where(x => x.Date == utcDateTime).FirstOrDefaultAsync();
     }
 
-    public async Task<IEnumerable<RainfallSlot>> GetRainFallSlots(string rainfallId, int slotNumber)
+    public async Task<IEnumerable<RainfallSlot>> GetRainFallSlots(string rainfallId, int slotNumber, int hourOfDay)
     {
         return await context.RainfallSlots
-            .Where(x => x.RainfallId == rainfallId && x.SlotNumber == slotNumber)
+            .Where(x => x.RainfallId == rainfallId && x.SlotNumber == slotNumber && x.HourOfDay == hourOfDay)
             .ToListAsync();
     }
 
