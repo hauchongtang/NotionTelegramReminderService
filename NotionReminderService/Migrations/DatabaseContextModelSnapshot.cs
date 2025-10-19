@@ -107,6 +107,10 @@ namespace NotionReminderService.Migrations
                     b.Property<int>("HourOfDay")
                         .HasColumnType("integer");
 
+                    b.Property<string>("LastTimeStamp")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<double>("RainfallAmount")
                         .HasColumnType("double precision");
 
