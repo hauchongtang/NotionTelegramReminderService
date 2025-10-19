@@ -59,6 +59,13 @@ public class WeatherMessageService(
         var dateTimeOffset = DateTimeOffset.Parse(rainfallResponse.Data.Readings[0].Timestamp);
         var dateTimeNow = dateTimeOffset.DateTime;
         var slotNumber = dateTimeNow.Minute < 30 ? 1 : 2;
+        var slotNumberBasedOnSystemTime = dateTimeProvider.Now.Minute < 30 ? 1 : 2;
+        if (slotNumber != slotNumberBasedOnSystemTime)
+        {
+            logger.LogWarning(
+                $"Mismatch in slot number calculation. API SlotNumber: {slotNumber}, System SlotNumber: {slotNumberBasedOnSystemTime}");
+            return;
+        }
         var existingSlots = await weatherRepository.GetRainFallSlots(rainfallId!, slotNumber, dateTimeNow.Hour);
         var aggregatedReadings = rainfallResponse.Data.Readings[0].Data
             .GroupBy(x => x.StationId)
