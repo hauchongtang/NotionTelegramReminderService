@@ -72,7 +72,10 @@ public class WeatherMessageService(
             .Select(g =>
             {
                 var existingReading =
-                    existingSlots.FirstOrDefault(x => x.StationId == g.Key && x.HourOfDay == dateTimeNow.Hour);
+                    existingSlots.FirstOrDefault(x => 
+                        x.StationId == g.Key 
+                        && x.HourOfDay == dateTimeNow.Hour
+                        && x.LastTimeStamp != rainfallResponse.Data.Readings[0].Timestamp);
                 var currentValue = g.First().Value;
                 var aggregatedValue = existingReading?.RainfallAmount + currentValue ?? currentValue;
                 return new RainfallSlot
@@ -83,7 +86,8 @@ public class WeatherMessageService(
                     HourOfDay = dateTimeProvider.Now.Hour,
                     SlotNumber = slotNumber,
                     RainfallAmount = aggregatedValue,
-                    UpdatedOn = dateTimeProvider.Now
+                    UpdatedOn = dateTimeProvider.Now,
+                    LastTimeStamp = rainfallResponse.Data.Readings[0].Timestamp
                 };
             });
         await weatherRepository.UpsertRainfallSlots(aggregatedReadings.ToList());

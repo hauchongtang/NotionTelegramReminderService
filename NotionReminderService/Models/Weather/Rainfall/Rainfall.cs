@@ -40,4 +40,5 @@ public class RainfallSlot: BaseModel
     public int HourOfDay { get; set; }
     public int SlotNumber { get; set; }
     public double RainfallAmount { get; set; }
+    public string LastTimeStamp { get; set; }
 }
