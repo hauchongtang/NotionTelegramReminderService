@@ -457,6 +457,9 @@ public class UpdateService(
                 await weatherMessageService.SendRainfallSummaryMessage(callbackQuery.Message!.Chat);
                 break;
             }
+            case "triggerRainAreasImage":
+                await weatherMessageService.DownloadAndSendRainAreasImage(callbackQuery.Message!.Chat);
+                break;
             case "triggerCreateNewEventFlow":
             {
                 await telegramBotClient.SendMessage(callbackQuery.Message!.Chat,

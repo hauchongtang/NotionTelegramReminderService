@@ -9,6 +9,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using File = System.IO.File;
 
 namespace NotionReminderService.Services.BotHandlers.WeatherHandler;
 
@@ -190,7 +191,8 @@ public class WeatherMessageService(
             .AddNewRow()
             .AddButton(InlineKeyboardButton.WithCallbackData("Retrieve Again", "triggerRainfallSummaryLastHour"))
             .AddNewRow()
-            .AddButton(InlineKeyboardButton.WithCallbackData("Get Weather Forecast", "triggerForecast"));
+            .AddButton(InlineKeyboardButton.WithCallbackData("Get Weather Forecast", "triggerForecast"))
+            .AddButton(InlineKeyboardButton.WithCallbackData("Get Rain Areas", "triggerRainAreasImage"));
         await botClient.SendMessage(chat ?? new ChatId(botConfig.Value.ChatId), textToSend, ParseMode.Html, replyMarkup: replyMarkup);
     }
     
@@ -227,8 +229,31 @@ public class WeatherMessageService(
             .AddButton(InlineKeyboardButton.WithCallbackData("Retrieve Again", "triggerForecast"))
             .AddNewRow()
             .AddButton(
-                InlineKeyboardButton.WithCallbackData("Get Rainfall (Last 1h)", "triggerRainfallSummaryLastHour"));
+                InlineKeyboardButton.WithCallbackData("Get Rainfall (Last 1h)", "triggerRainfallSummaryLastHour"))
+            .AddButton(InlineKeyboardButton.WithCallbackData("Get Rain Areas", "triggerRainAreasImage"));
         await botClient.SendMessage(chat ?? new ChatId(botConfig.Value.ChatId), textToSend, ParseMode.Html,
             replyMarkup: replyMarkup);
+    }
+    
+    public async Task DownloadAndSendRainAreasImage(Chat? chat)
+    {
+        var filename = await weatherApi.GetRainAreas();
+        logger.LogInformation($"Rain areas image saved as {filename}");
+        await using var fs = File.OpenRead(filename);
+        var replyMarkup = new InlineKeyboardMarkup()
+            .AddNewRow()
+            .AddButton(InlineKeyboardButton.WithCallbackData("Retrieve Again", "triggerRainAreasImage"))
+            .AddNewRow()
+            .AddButton(InlineKeyboardButton.WithCallbackData("Retrieve Forecast", "triggerForecast"))
+            .AddButton(
+                InlineKeyboardButton.WithCallbackData("Get Rainfall (Last 1h)", "triggerRainfallSummaryLastHour"));
+        await botClient.SendPhoto(
+            chat ?? new ChatId(botConfig.Value.ChatId),
+            photo: fs,
+            messageThreadId: null,
+            parseMode: ParseMode.Html,
+            replyMarkup: replyMarkup,
+            caption:
+            "<b>Current Rain Areas in Singapore</b>\n\n<i>Powered by <a href=\"https://www.nea.gov.sg/weather/rain-areas\">NEA</a></i>");
     }
 }

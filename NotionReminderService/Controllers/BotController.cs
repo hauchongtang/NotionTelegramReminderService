@@ -110,4 +110,12 @@ public class BotController(
         await weatherMessageService.SendRainfallSummaryMessage(null);
         return Ok();
     }
+
+    [HttpGet("downloadRainAreasImage")]
+    [ServiceFilter(typeof(SecretKeyValidationAttribute))]
+    public async Task<IActionResult> DownloadRainAreasImage()
+    {
+        await weatherMessageService.DownloadAndSendRainAreasImage(null);
+        return Ok();
+    }
 }
