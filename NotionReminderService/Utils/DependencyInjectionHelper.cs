@@ -93,6 +93,9 @@ public static class DependencyInjectionHelper
 
         var transportConfigSection = configuration.GetSection("TransportConfiguration");
         services.Configure<TransportConfiguration>(transportConfigSection);
+        
+        var browserConfigSection = configuration.GetSection("BrowserConfiguration");
+        services.Configure<BrowserConfiguration>(browserConfigSection);
         return services;
     }
 }

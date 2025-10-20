@@ -7,7 +7,7 @@ using PuppeteerSharp;
 namespace NotionReminderService.Api.Weather;
 
 public class WeatherApi(IHttpClientFactory httpClientFactory, IDateTimeProvider dateTimeProvider,
-    IOptions<WeatherConfiguration> weatherConfig) : IWeatherApi
+    IOptions<WeatherConfiguration> weatherConfig, IOptions<BrowserConfiguration> browserConfig) : IWeatherApi
 {
     public async Task<List<WeatherItem>?> GetRealTimeWeather()
     {
@@ -41,12 +41,13 @@ public class WeatherApi(IHttpClientFactory httpClientFactory, IDateTimeProvider 
 
     public async Task<string> GetRainAreas()
     {
+        var options = new ConnectOptions
+        {
+            BrowserWSEndpoint = $"wss://{browserConfig.Value.BrowserWSEndpoint}?token={browserConfig.Value.Token}"
+        };
         var browserFetcher = new BrowserFetcher();
         await browserFetcher.DownloadAsync();
-        var browser = await Puppeteer.LaunchAsync(new LaunchOptions
-        {
-            Headless = true
-        });
+        await using var browser = await Puppeteer.ConnectAsync(options);
         var page = await browser.NewPageAsync();
         await page.GoToAsync("https://www.nea.gov.sg/weather/rain-areas");
         var notificationBtn = await page.QuerySelectorAsync(".notification-btn-close");
