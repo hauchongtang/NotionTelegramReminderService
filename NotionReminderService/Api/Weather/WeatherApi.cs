@@ -59,7 +59,8 @@ public class WeatherApi(IHttpClientFactory httpClientFactory, IDateTimeProvider 
         await page.SetViewportAsync(new ViewPortOptions
         {
             Width = 800,
-            Height = 900
+            Height = 900,
+            DeviceScaleFactor = 2
         });
         await page.ScreenshotAsync("rain-areas.png");
         await browser.CloseAsync();
