@@ -9,6 +9,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using File = System.IO.File;
 
 namespace NotionReminderService.Services.BotHandlers.WeatherHandler;
 
@@ -21,6 +22,20 @@ public class WeatherMessageService(
     IOptions<BotConfiguration> botConfig,
     ILogger<IWeatherMessageService> logger) : IWeatherMessageService
 {
+    public async Task DownloadAndSendRainAreasImage(Chat? chat)
+    {
+        var filename = await weatherApi.GetRainAreas();
+        logger.LogInformation($"Rain areas image saved as {filename}");
+        await using var fs = File.OpenRead(filename);
+        await botClient.SendPhoto(
+            chat ?? new ChatId(botConfig.Value.ChatId),
+            photo: fs,
+            messageThreadId: null,
+            parseMode: ParseMode.Html,
+            caption:
+            "<b>Current Rain Areas in Singapore</b>\n\n<i>Powered by <a href=\"https://www.nea.gov.sg/weather/rain-areas\">NEA</a></i>");
+    }
+    
     public async Task UpdateRainfallStations()
     {
         var rainfallResponse = await weatherApi.GetRealTimeRainfallByLocation();

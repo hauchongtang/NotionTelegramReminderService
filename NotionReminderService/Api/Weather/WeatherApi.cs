@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using NotionReminderService.Config;
 using NotionReminderService.Models.Weather;
 using NotionReminderService.Utils;
+using PuppeteerSharp;
 
 namespace NotionReminderService.Api.Weather;
 
@@ -36,5 +37,32 @@ public class WeatherApi(IHttpClientFactory httpClientFactory, IDateTimeProvider 
         response.EnsureSuccessStatusCode();
         
         return await ResponseHandler.HandleResponse<RainfallResponse>(response);
+    }
+
+    public async Task<string> GetRainAreas()
+    {
+        var browserFetcher = new BrowserFetcher();
+        await browserFetcher.DownloadAsync();
+        var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+        {
+            Headless = true
+        });
+        var page = await browser.NewPageAsync();
+        await page.GoToAsync("https://www.nea.gov.sg/weather/rain-areas");
+        var notificationBtn = await page.QuerySelectorAsync(".notification-btn-close");
+        await notificationBtn.ClickAsync();
+        var checkboxMrtStn = await page.QuerySelectorAsync("#checkbox-mrt");
+        await checkboxMrtStn.ClickAsync();
+        var elementHandle = await page.QuerySelectorAsync(".forecast-widget__tab");
+        await elementHandle.ScrollIntoViewAsync();
+
+        await page.SetViewportAsync(new ViewPortOptions
+        {
+            Width = 800,
+            Height = 900
+        });
+        await page.ScreenshotAsync("rain-areas.png");
+        await browser.CloseAsync();
+        return "rain-areas.png";
     }
 }

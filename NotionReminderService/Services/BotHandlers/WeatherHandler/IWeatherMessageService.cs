@@ -11,4 +11,5 @@ public interface IWeatherMessageService
     Task UpdateRainfallReadings();
     Task<RainfallSummary?> GetRainfallSummaryLastHour();
     Task SendRainfallSummaryMessage(Chat? chat);
+    Task DownloadAndSendRainAreasImage(Chat? chat);
 }
