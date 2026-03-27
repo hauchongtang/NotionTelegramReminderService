@@ -8,7 +8,7 @@ public abstract class NotionEventDateFormatter
     {
         if (notionEvent.Start is null) return string.Empty;
         var notionEventStart = notionEvent.Start.Value.AddHours(8);
-        var notionEventEnd = notionEvent.End!.Value.AddHours(8);
+        var notionEventEnd = notionEvent.End?.AddHours(8) ?? DateTime.MinValue;
         string eventDate;
         if (EventIsToday(notionEvent, dateTimeNow))
         {
