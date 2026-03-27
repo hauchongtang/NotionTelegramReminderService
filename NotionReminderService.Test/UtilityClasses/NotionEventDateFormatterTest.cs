@@ -43,7 +43,7 @@ public class NotionEventDateFormatterTest
 
         var formattedResult = NotionEventDateFormatter.FormatEventDate(notionEventToday, currentDt);
 
-        Assert.That(formattedResult, Is.EqualTo($"Today @ {startDate:t}"));
+        Assert.That(formattedResult, Is.EqualTo($"Today @ {startDate.AddHours(8):t}"));
     }
 
     [Test]
@@ -66,7 +66,7 @@ public class NotionEventDateFormatterTest
 
         var formattedResult = NotionEventDateFormatter.FormatEventDate(notionEventToday, currentDt);
 
-        Assert.That(formattedResult, Is.EqualTo($"Today \u2192 {endDate:F}"));
+        Assert.That(formattedResult, Is.EqualTo($"Today \u2192 {endDate.AddHours(8):F}"));
     }
 
     [Test]
@@ -89,7 +89,7 @@ public class NotionEventDateFormatterTest
 
         var formattedResult = NotionEventDateFormatter.FormatEventDate(notionEventToday, currentDt);
 
-        Assert.That(formattedResult, Is.EqualTo($"Today @ {startDate:t} \u2192 {endDate:F}"));
+        Assert.That(formattedResult, Is.EqualTo($"Today @ {startDate.AddHours(8):t} \u2192 {endDate.AddHours(8):F}"));
     }
 
     [Test]
@@ -110,7 +110,7 @@ public class NotionEventDateFormatterTest
 
         var formattedResult = NotionEventDateFormatter.FormatEventDate(notionEventToday, currentDt);
         
-        Assert.That(formattedResult, Is.EqualTo($"{startDate:D}"));
+        Assert.That(formattedResult, Is.EqualTo($"{startDate.AddHours(8):D}"));
     }
 
     [Test]
@@ -131,7 +131,7 @@ public class NotionEventDateFormatterTest
 
         var formattedResult = NotionEventDateFormatter.FormatEventDate(notionEventToday, currentDt);
         
-        Assert.That(formattedResult, Is.EqualTo($"{startDate:F}"));
+        Assert.That(formattedResult, Is.EqualTo($"{startDate.AddHours(8):F}"));
     }
 
     [Test]
@@ -154,7 +154,7 @@ public class NotionEventDateFormatterTest
 
         var formattedResult = NotionEventDateFormatter.FormatEventDate(notionEventToday, currentDt);
         
-        Assert.That(formattedResult, Is.EqualTo($"{startDate:D} \u2192 {endDate:D}"));
+        Assert.That(formattedResult, Is.EqualTo($"{startDate.AddHours(8):D} \u2192 {endDate.AddHours(8):D}"));
     }
 
     [Test]
@@ -177,6 +177,6 @@ public class NotionEventDateFormatterTest
 
         var formattedResult = NotionEventDateFormatter.FormatEventDate(notionEventToday, currentDt);
         
-        Assert.That(formattedResult, Is.EqualTo($"{startDate:F} \u2192 {endDate:F}"));
+        Assert.That(formattedResult, Is.EqualTo($"{startDate.AddHours(8):F} \u2192 {endDate.AddHours(8):F}"));
     }
 }

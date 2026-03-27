@@ -7,27 +7,28 @@ public abstract class NotionEventDateFormatter
     public static string FormatEventDate(NotionEvent notionEvent, DateTime dateTimeNow)
     {
         if (notionEvent.Start is null) return string.Empty;
-        
+        var notionEventStart = notionEvent.Start.Value.AddHours(8);
+        var notionEventEnd = notionEvent.End?.AddHours(8) ?? DateTime.MinValue;
         string eventDate;
         if (EventIsToday(notionEvent, dateTimeNow))
         {
             eventDate = notionEvent.End is null 
                 ? notionEvent.IsWholeDayEvent 
                     ? "Today" 
-                    : $"Today @ {notionEvent.Start.Value:t}" 
+                    : $"Today @ {notionEventStart:t}" 
                 : notionEvent.IsWholeDayEvent 
-                    ? $"Today \u2192 {notionEvent.End.Value:F}" 
-                    : $"Today @ {notionEvent.Start.Value:t} \u2192 {notionEvent.End.Value:F}";
+                    ? $"Today \u2192 {notionEventEnd:F}" 
+                    : $"Today @ {notionEventStart:t} \u2192 {notionEventEnd:F}";
         }
         else
         {
             eventDate = notionEvent.End is null
                 ? notionEvent.IsWholeDayEvent 
-                    ? $"{notionEvent.Start.Value:D}" 
-                    : $"{notionEvent.Start.Value:F}"
+                    ? $"{notionEventStart:D}" 
+                    : $"{notionEventStart:F}"
                 : notionEvent.IsWholeDayEvent 
-                    ? $"{notionEvent.Start.Value:D} \u2192 {notionEvent.End.Value:D}"
-                    : $"{notionEvent.Start.Value:F} \u2192 {notionEvent.End.Value:F}";
+                    ? $"{notionEventStart:D} \u2192 {notionEventEnd:D}"
+                    : $"{notionEventStart:F} \u2192 {notionEventEnd:F}";
         }
 
         return eventDate;
